@@ -3,6 +3,8 @@
  Project - Optimized Neural Network with Relu activation
 */
 
+//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -12,9 +14,9 @@
 // Defination
 #define GIG 3.3e9
 #define THREADS 1
-static const int numInputs = 2;
-static const int numHiddenNodes = 2;
-static const int numOutputs = 1;
+#define numInputs = 2;
+#define numHiddenNodes = 2;
+#define numOutputs = 1;
 static const int numTrainingSets = 4;
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Relu(x)
