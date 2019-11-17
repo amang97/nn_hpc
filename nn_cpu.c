@@ -14,9 +14,9 @@
 // Defination
 #define GIG 3.3e9
 #define THREADS 1
-#define numInputs = 2;
-#define numHiddenLayers = 2;
-#define numOutputs = 1;
+#define numInputs 784
+#define numHiddenLayers 2
+#define numOutputs 2
 //static const int numTrainingSets = 4;
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Relu(x)
@@ -72,31 +72,89 @@ int main(int argc, char *argv[])
 {
   if(argc == 1)
   {
-    printf("Please pass %d numbers as the number of hidden nodes in a hidden layer\n",numHiddenLayers);
+    printf("Please pass %d numbers in the argument\n",numHiddenLayers);
   }
   else if(argc != (numHiddenLayers + 1))
   {
-    printf("Insufficient quantity of number of hidden nodes provided. Please pass %d numbers\n", numHiddenLayers);
+    printf("Insufficient number of arguments provided. Please pass %d numbers\n", numHiddenLayers);
   }
   else
   {
     int i;
 
-    srand(time(0));
+    srand(1527);
 
     int hidden_Layer_node_count[numHiddenLayers];
     float * hiddenLayer_output[numHiddenLayers];
     float outputLayer_output[numOutputs];
     float hiddenLayerBiases[numHiddenLayers];
     float outputLayerBias[numOutputs];
-    float ** hiddenWeights[numHiddenLayers];
-    float ** outputWeights;
+    // For weights, the row number is the output node number
+    // The column number if the input node number
+    // so it is in the format of (Ax = b)
+    // here x is the values in the input layer
+    // here y is the result in the output layer
+    float * hiddenWeights[numHiddenLayers];
+    float * outputWeights;
 
     for(i = 0; i < numHiddenLayers; i++)
     {
-      hidden_Layer_node_count[i] = stoi(argv[i+1]);
+      hidden_Layer_node_count[i] = atoi(argv[i+1]);
       printf("Hidden Layer %d count: %d\n", i, hidden_Layer_node_count[i]);
     }
+
+    //Initialize hidden weigts
+    for(i = 0; i < numHiddenLayers; i++)
+    {
+      int j;
+      if(i == 0)
+      {
+        hiddenWeights[0] = (float*)calloc(hidden_Layer_node_count[0]*784, sizeof(float));
+        if(hiddenWeights[0] == NULL)
+        {
+          printf("Memory not allocated\n");
+          return 0;
+        }
+        for(j = 0 ; j < hidden_Layer_node_count[0]*784; j++)
+        {
+          hiddenWeights[0][j] = init_weight();
+        }
+      }
+      else
+      {
+        hiddenWeights[i] = (float*)calloc(hidden_Layer_node_count[i]*hidden_Layer_node_count[i-1],sizeof(float));
+        if(hiddenWeights[i] == NULL)
+        {
+          printf("Memory not allocated\n");
+          return 0;
+        }
+        for(j = 0 ; j < (hidden_Layer_node_count[i]*hidden_Layer_node_count[i-1]); j++)
+        {
+          hiddenWeights[i][j] = init_weight();
+        }
+      }
+    }
+
+    // Initialize output weights
+    outputWeights = (float*)calloc(numOutputs*hidden_Layer_node_count[numHiddenLayers-1], sizeof(float));
+    if(outputWeights == NULL)
+    {
+      printf("Memory not allocated\n");
+      return 0;
+    }
+    for(i = 0; i < (numOutputs*hidden_Layer_node_count[numHiddenLayers-1]); i++)
+    {
+      outputWeights[i] = init_weight();
+    }
+    printf("Initialized Weights\n");
+
+    for(i = 0; i < numHiddenLayers; i++)
+    {
+      free(hiddenWeights[i]);
+    }
+    free(outputWeights);
+
+    printf("Freed Weights\n");
   }
   /*double hiddenLayer[numHiddenNodes];
   double hiddenWeights[numInputs][numHiddenNodes];
