@@ -14,9 +14,9 @@
 // Defination
 #define GIG 3.3e9
 #define THREADS 1
-#define numInputs 784
-#define numHiddenLayers 2
-#define numOutputs 2
+#define numInputs 2
+#define numHiddenLayers 1
+#define numOutputs 1
 //static const int numTrainingSets = 4;
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Relu(x)
@@ -42,6 +42,10 @@ float drelu(float x)
   else if(x == 0)
   {
     return ((float)rand() / (float)RAND_MAX);
+  }
+  else
+  {
+    return 1;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,6 +152,13 @@ int main(int argc, char *argv[])
     }
     printf("Initialized Weights\n");
 
+    // Feed Forward Algorithm
+    for(i = 0; i < numHiddenLayers; i++)
+    {
+
+    }
+
+    // Free Initialized Weights
     for(i = 0; i < numHiddenLayers; i++)
     {
       free(hiddenWeights[i]);
