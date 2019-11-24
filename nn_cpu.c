@@ -14,9 +14,10 @@
 // Defination
 #define GIG 3.3e9
 #define THREADS 1
-#define numInputs 2
-#define numHiddenLayers 1
-#define numOutputs 1
+#define NUMINPUTS 2
+#define NUMHIDDENLAYERS 1
+#define NUMOUTPUTS 1
+#define BATCH_SIZE 4
 //static const int numTrainingSets = 4;
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Relu(x)
@@ -70,17 +71,33 @@ float init_weight()
   return ((float)rand())/((float)RAND_MAX);
 }
 ///////////////////////////////////////////////////////////////////////////////
+// Matrix Vector multiplication
+void mvmr(float* A, float * x, float * result, int num_row, int num_col, int bias)
+{
+  int i,j;
+  for(i = 0; i < num_row; i++)
+  {
+    float sum = 0;
+    for(j = 0; j < num_col; j++)
+    {
+      sum = sum + (A[(i*num_col) + j] * x[j]);
+    }
+    result[i] = relu(sum + bias);
+  }
+
+}
+///////////////////////////////////////////////////////////////////////////////
 
 // Main Function
 int main(int argc, char *argv[])
 {
   if(argc == 1)
   {
-    printf("Please pass %d numbers in the argument\n",numHiddenLayers);
+    printf("Please pass %d numbers in the argument\n",NUMHIDDENLAYERS);
   }
-  else if(argc != (numHiddenLayers + 1))
+  else if(argc != (NUMHIDDENLAYERS + 1))
   {
-    printf("Insufficient number of arguments provided. Please pass %d numbers\n", numHiddenLayers);
+    printf("Insufficient number of arguments provided. Please pass %d numbers\n", NUMHIDDENLAYERS);
   }
   else
   {
@@ -88,27 +105,29 @@ int main(int argc, char *argv[])
 
     srand(1527);
 
-    int hidden_Layer_node_count[numHiddenLayers];
-    float * hiddenLayer_output[numHiddenLayers];
-    float outputLayer_output[numOutputs];
-    float hiddenLayerBiases[numHiddenLayers];
-    float outputLayerBias[numOutputs];
+    int hidden_Layer_node_count[NUMHIDDENLAYERS];
+    float training_inputs[NUMINPUTS];
+    float * hiddenLayer_output[NUMHIDDENLAYERS];
+    float outputLayer_output[NUMOUTPUTS];
+    float hiddenLayerBiases[NUMHIDDENLAYERS];
+    float outputLayerBias;
     // For weights, the row number is the output node number
     // The column number if the input node number
     // so it is in the format of (Ax = b)
     // here x is the values in the input layer
     // here y is the result in the output layer
-    float * hiddenWeights[numHiddenLayers];
+    float * hiddenWeights[NUMHIDDENLAYERS];
     float * outputWeights;
 
-    for(i = 0; i < numHiddenLayers; i++)
+    // Get Number of nodes in each Hidden Layer ///////////////////////////////
+    for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
       hidden_Layer_node_count[i] = atoi(argv[i+1]);
       printf("Hidden Layer %d count: %d\n", i, hidden_Layer_node_count[i]);
     }
 
-    //Initialize hidden weigts
-    for(i = 0; i < numHiddenLayers; i++)
+    //Initialize hidden weigts ////////////////////////////////////////////////
+    for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
       int j;
       if(i == 0)
@@ -139,27 +158,47 @@ int main(int argc, char *argv[])
       }
     }
 
-    // Initialize output weights
-    outputWeights = (float*)calloc(numOutputs*hidden_Layer_node_count[numHiddenLayers-1], sizeof(float));
+    // Initialize output weights////////////////////////////////////////////////
+    outputWeights = (float*)calloc(NUMOUTPUTS*hidden_Layer_node_count[NUMHIDDENLAYERS-1], sizeof(float));
     if(outputWeights == NULL)
     {
       printf("Memory not allocated\n");
       return 0;
     }
-    for(i = 0; i < (numOutputs*hidden_Layer_node_count[numHiddenLayers-1]); i++)
+    for(i = 0; i < (NUMOUTPUTS*hidden_Layer_node_count[NUMHIDDENLAYERS-1]); i++)
     {
       outputWeights[i] = init_weight();
     }
-    printf("Initialized Weights\n");
+    printf("Initialized Weights for Hidden and Output Layer\n");
 
-    // Feed Forward Algorithm
-    for(i = 0; i < numHiddenLayers; i++)
+    // Initialize biases //////////////////////////////////////////////////////
+    // For Hidden Layers
+    for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
+      hiddenLayerBiases[i] = init_weight();
+    }
+    // For Output Layer
+    outputLayerBias = init_weight();
+    printf("Initialized Bias for Hidden and Output Layer\n");
 
+    // Allocate memory to Hidden Layer Output /////////////////////////////////
+    for(i = 0; i < NUMHIDDENLAYERS; i++)
+    {
+      hiddenLayer_output[i] = (float*)calloc(hidden_Layer_node_count[i],sizeof(float));
+    }
+    printf("Alllocated memory for Hidden Layer Nodes\n");
+
+    // Feed Forward Algorithm /////////////////////////////////////////////////
+    for(i = 0; i < NUMHIDDENLAYERS; i++)
+    {
+      if(i == 0)
+      {
+        //hiddenLayer_output[i] = mvmr()
+      }
     }
 
-    // Free Initialized Weights
-    for(i = 0; i < numHiddenLayers; i++)
+    // Free Initialized Weights/////////////////////////////////////////////////
+    for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
       free(hiddenWeights[i]);
     }
@@ -167,11 +206,6 @@ int main(int argc, char *argv[])
 
     printf("Freed Weights\n");
   }
-  /*double hiddenLayer[numHiddenNodes];
-  double hiddenWeights[numInputs][numHiddenNodes];
-  double outputWeights[numHiddenNodes][numOutputs];
-  double training_inputs[numTrainingSets][numInputs];
-  double training_outputs[numTrainingSets][numOutputs];*/
   printf("Hello World\n");
 
   return 0;
