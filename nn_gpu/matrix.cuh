@@ -1,8 +1,19 @@
-/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt
+/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt              */
 /******************************************************************************/
-/* Matrix library for GPU in C
-*/
+/* Matrix library for GPU in C */
 #pragma once    /* file guard */
+/******************************************************************************/
+// Assertion to check for errors
+#define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
+{
+  if (code != cudaSuccess)
+  {
+    fprintf(stderr, "CUDA_SAFE_CALL: %s %s %d\n",
+                                       cudaGetErrorString(code), file, line);
+    if (abort) exit(code);
+  }
+}
 /******************************************************************************/
 /* Data Structures */
 /******************************************************************************/
@@ -11,7 +22,8 @@ typedef float data_t;
 typedef struct Matrix {
     int rows;
     int cols;
-    data_t * data;
+    data_t * data_d;
+    data_t * data_h;
 } matrix;
 
 /******************************************************************************/
@@ -24,6 +36,7 @@ typedef struct Matrix {
 __host__
 matrix * matrix_allocate(int rows, int cols);
 
+void matrix_cuda_allocate(int rows, int cols);
 /* Matrix initialization on Host
 Input:  number of rows and columns. Initialization seed for filling the matrix
         and reproducability. if seed = 0, matrix initialized with 0
