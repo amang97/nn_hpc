@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
     {
       hiddenLayer_output[i] = (float*)calloc(hidden_Layer_node_count[i],sizeof(float));
     }
-    printf("Alllocated memory for Hidden Layer Nodes\n");
+    printf("Alllocated memory for Neural Network Nodes\n");
 
     // Feed Forward Algorithm /////////////////////////////////////////////////
     for(i = 0; i < NUMHIDDENLAYERS; i++)
@@ -205,6 +205,12 @@ int main(int argc, char *argv[])
     free(outputWeights);
 
     printf("Freed Weights\n");
+    // Free Neural Network Nodes //////////////////////////////////////////////
+    for(i = 0; i < NUMHIDDENLAYERS; i++)
+    {
+      free(hiddenLayer_output[i]);
+    }
+    printf("Freed Nodes\n");
   }
   printf("Hello World\n");
 
