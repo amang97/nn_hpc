@@ -6,6 +6,10 @@
 #include <math.h>
 #include "matrix.cuh"
 /******************************************************************************/
+/* Parameters */
+/******************************************************************************/
+#define BLOCK_SIZE_b    256
+/******************************************************************************/
 /* Implementations */
 /******************************************************************************/
 
@@ -92,3 +96,43 @@ void Sigmoid_backward_shared(data_t *dA, data_t *dZ, data_t *Z, int Zx, int Zy);
 
 __global__
 void Sigmoid_backward_unified(data_t *dA, data_t *dZ, data_t *Z, int Zx, int Zy);
+
+/* Host calls to GPU for RELU for forward pass*/
+matrix * RELU_forward(layer& l) {
+    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+    dim3 block(BLOCK_SIZE_b);
+    dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
+    RELU_forward_global<<<num_blocks,block>>>(l.A->data, Z, Zx, Zy);
+    
+    return (matrix *)l.A;
+}
+
+/* Host calls to GPU for RELU for backProp */
+matrix * RELU_back_propagation(layer& l, data_t lr) {
+    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+    dim3 block(BLOCK_SIZE_b);
+    dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
+    RELU_backward_global<<<num_blocks,block>>>(l.dZ->data,l.dA->data,Z,Zx,Zy);
+
+    return (matrix *)l.dZ;
+}
+
+/* Host calls to GPU for Sigmoid for Forward pass */
+matrix * Sigmoid_forward(layer& l) {
+    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+    dim3 block(BLOCK_SIZE_b);
+    dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
+    Sigmoid_Forward_global<<<num_blocks,block>>>(l.A->data, Z, Zx, Zy);
+    
+    return (matrix *)l.A;
+}
+
+/* Host calls to GPU for Sigmoid for backprop*/
+matrix * Sigmoid_back_propagation(layer& l, data_t lr) {
+    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+    dim3 block(BLOCK_SIZE_b);
+    dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
+    Sigmoid_backward_global<<<num_blocks,block>>>(l.dZ->data,l.dA->data,Z,Zx,Zy);
+
+    return (matrix *)l.dZ;
+}

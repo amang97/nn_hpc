@@ -61,3 +61,9 @@ void Sigmoid_backward_shared(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
 __global__
 void Sigmoid_backward_unified(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
 
+/* Host calls to RELU */
+matrix * RELU_forward(layer& l);
+
+/* Host calls to Sigmoid */
+matrix * RELU_back_propagation(layer& l, data_t lr);
+

@@ -16,10 +16,11 @@ typedef struct NNLayer {
 
 typedef struct Layer {
     matrix *Z;  // output matrix
-    matrix *dA;
     matrix *W;  // weights of current layer (Weight weights)
     matrix *A;  // activation of previous layer (Activation Matrix)
     matrix *b;  // bias vector
+    matrix *dA;
+    matrix *dZ;
 } layer;
 
 /* Feed Forward NN Forward pass (FFNNFP) on a layer */
@@ -159,10 +160,13 @@ void layer_init(layer& l, matrix* A, matrix *W, matrix *b, int Wx, int Wy,
     Input: Weight matrix W, bias vector b
     output: 0 if freeing memory success, -1 otherwise
 */
-int delete_layer(layer &l);
+int delete_layer(layer& l);
 
 /* Forward pass call from host
 Input: reference to the layer
 Output: pointer to matrix Z = current_layer_W' * previous_layer_A + b
 */
-matrix * forward_pass(layer& l, data_t learning_rate);
+matrix * forward_pass(layer& l, data_t lr);
+
+/* backward pass call from host */
+matrix * back_propagation(layer& l, data_t lr);

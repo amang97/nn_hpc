@@ -225,6 +225,7 @@ void layer_init(layer& l, matrix* A, matrix *W, matrix *b, int Wx, int Wy,
     l.b = matrix_init(Wx, 1, 0);
     l.Z = matrix_allocate(Ax, Wy);
     l.dA = matrix_allocate(Ax, Ay);
+    l.dZ = matrix_allocate(Ax, Wy);
 }
 
 /* Deleting a layer
@@ -237,7 +238,9 @@ int delete_layer(layer &l) {
     int freeb = matrix_delete(l.b);
     int freeZ = matrix_delete(l.Z);
     int freedA = matrix_delete(l.dA);
-    if ((!freeW) || (!freeb) || (!freeA) || (!freeZ) || (!freedA)) return -1;
+    int freedZ = matrix_delete(l.dZ);
+    if ((!freeW) || (!freeb) || (!freeA) || (!freeZ) || (!freedA) || (freedZ))
+        return -1;
     return 0;
 }
 
@@ -256,23 +259,23 @@ matrix * forward_pass(layer& l) {
 }
 
 /* backward pass call from host */
-matrix * back_propagation(layer& l, matrix *dZ, data_t lr) {
+matrix * back_propagation(layer& l, data_t lr) {
     data_t *W = l.W->data; int Wx = l.W->rows; int Wy = l.W->cols;
     data_t *A = l.A->data; int Ax = l.A->rows; int Ay = l.A->cols;
-    data_t *dz = dZ->data; int dzx = dZ->rows; int dzy = dZ->cols;
+    data_t *dZ = l.dZ->data; int dZx = l.dZ->rows; int dZy = l.dZ->cols;
     data_t *b = l.b->data; int bx = l.b->rows;
     data_t *dA = l.dA->data;
 
     dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
     dim3 grid_W((Ax+block_W.x-1)/block_W.x, (Ay+block_W.y-1)/block_W.y);
     dim3 block_b(BLOCK_SIZE_b);
-    dim3 num_blocks_b((dzy*dzx+block_b.x-1)/block_b.x);
+    dim3 num_blocks_b((dZy*dZx+block_b.x-1)/block_b.x);
     
-    FFNNBP_global<<<grid_W,block_W>>>(dA, W, dz, Wx, Wy, dzx, dzy);
+    FFNNBP_global<<<grid_W,block_W>>>(dA, W, dZ, Wx, Wy, dZx, dZy);
     // cudaDeviceSynchronize ??????????
-    FFNNUW_global<<<grid_W,block_W>>>(W, dz, A, dzx, dzy, Ax, Ay, lr); 
+    FFNNUW_global<<<grid_W,block_W>>>(W, dZ, A, dZx, dZy, Ax, Ay, lr); 
     // cudaDeviceSynchronize ??????????
-    FFNNUb_global<<<num_blocks_b,block_b>>>(b, dz, dzx, dzy, bx, lr);
+    FFNNUb_global<<<num_blocks_b,block_b>>>(b, dZ, dZx, dZy, bx, lr);
 
     return (matrix *)l.dA;
 }
