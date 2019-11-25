@@ -98,41 +98,53 @@ __global__
 void Sigmoid_backward_unified(data_t *dA, data_t *dZ, data_t *Z, int Zx, int Zy);
 
 /* Host calls to GPU for RELU for forward pass*/
-matrix * RELU_forward(layer& l) {
-    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+void RELU_forward(layer& l) {
+    // assumes Z has been allocated and computed
+    int Zx = l.Z->rows; int Zy = l.Z->cols;
     dim3 block(BLOCK_SIZE_b);
     dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
-    RELU_forward_global<<<num_blocks,block>>>(l.A->data, Z, Zx, Zy);
-    
-    return (matrix *)l.A;
+    RELU_forward_global<<<num_blocks,block>>>(l.A->data_d, l.Z->data_d, Zx, Zy);
+    // copy results of A from device to host 
+    CUDA_SAFE_CALL(cudaMemcpy(l.A.data_h, l.A.data_d, Ax*Ay*sizeof(data_t),
+    cudaMemcpyDeviceToHost));
 }
 
 /* Host calls to GPU for RELU for backProp */
-matrix * RELU_back_propagation(layer& l, data_t lr) {
-    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+void RELU_back_propagation(layer& l, data_t lr) {
+    int Zx = l.Z->rows; int Zy = l.Z->cols;
     dim3 block(BLOCK_SIZE_b);
     dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
-    RELU_backward_global<<<num_blocks,block>>>(l.dZ->data,l.dA->data,Z,Zx,Zy);
-
-    return (matrix *)l.dZ;
+    RELU_backward_global<<<num_blocks,block>>>(l.dZ->data_d,
+                                                l.dA->data_d,
+                                                l.Z->data_d,
+                                                Zx, Zy);
+    // copy results of A from device to host 
+    CUDA_SAFE_CALL(cudaMemcpy(l.dZ.data_h, l.dZ.data_d, Zx*Zy*sizeof(data_t),
+    cudaMemcpyDeviceToHost));
 }
 
 /* Host calls to GPU for Sigmoid for Forward pass */
-matrix * Sigmoid_forward(layer& l) {
-    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+void Sigmoid_forward(layer& l) {
+    int Zx = l.Z->rows; int Zy = l.Z->cols;
     dim3 block(BLOCK_SIZE_b);
     dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
-    Sigmoid_Forward_global<<<num_blocks,block>>>(l.A->data, Z, Zx, Zy);
-    
-    return (matrix *)l.A;
+    Sigmoid_Forward_global<<<num_blocks,block>>>(l.A->data_d, l.Z->data_d, Zx, Zy);    
+    // copy results of A from device to host 
+    CUDA_SAFE_CALL(cudaMemcpy(l.A.data_h, l.A.data_d, Ax*Ay*sizeof(data_t),
+    cudaMemcpyDeviceToHost));
 }
 
 /* Host calls to GPU for Sigmoid for backprop*/
-matrix * Sigmoid_back_propagation(layer& l, data_t lr) {
-    data_t *Z = l.Z->data; int Zx = l.Z->rows; int Zy = l.Z->cols;
+void Sigmoid_back_propagation(layer& l, data_t lr) {
+    int Zx = l.Z->rows; int Zy = l.Z->cols;
     dim3 block(BLOCK_SIZE_b);
     dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
-    Sigmoid_backward_global<<<num_blocks,block>>>(l.dZ->data,l.dA->data,Z,Zx,Zy);
-
+    Sigmoid_backward_global<<<num_blocks,block>>>(l.dZ->data_d,
+                                                l.dA->data_d,
+                                                l.Z->data_d,
+                                                Zx, Zy);
+    // copy results of A from device to host 
+    CUDA_SAFE_CALL(cudaMemcpy(l.dZ.data_h, l.dZ.data_d, Zx*Zy*sizeof(data_t),
+    cudaMemcpyDeviceToHost));
     return (matrix *)l.dZ;
 }

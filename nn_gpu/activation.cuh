@@ -62,8 +62,13 @@ __global__
 void Sigmoid_backward_unified(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
 
 /* Host calls to RELU */
-matrix * RELU_forward(layer& l);
+void RELU_forward(layer& l);
 
 /* Host calls to Sigmoid */
-matrix * RELU_back_propagation(layer& l, data_t lr);
+void RELU_back_propagation(layer& l, data_t lr);
 
+/* Host calls to GPU for Sigmoid for Forward pass */
+void Sigmoid_forward(layer& l);
+
+/* Host calls to GPU for Sigmoid for backprop*/
+void Sigmoid_back_propagation(layer& l, data_t lr);
