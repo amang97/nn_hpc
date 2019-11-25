@@ -13,6 +13,17 @@
 /******************************************************************************/
 #define BLOCK_SIZE_W    8
 #define BLOCK_SIZE_b    256
+// Assertion to check for errors
+#define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
+{
+  if (code != cudaSuccess)
+  {
+    fprintf(stderr, "CUDA_SAFE_CALL: %s %s %d\n",
+                                       cudaGetErrorString(code), file, line);
+    if (abort) exit(code);
+  }
+}
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
@@ -214,7 +225,7 @@ void FFNNUb_unified(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr) 
 
 /* Initializing a layer with random weights and 0 bias
     Input: refrence to layer, A, W, b, Shape of W, initialization seed
-    Output: W initialized randomly according to seed, bias col vector of 0 
+    Output: W initialized randomly according to seed, bias col vector of 0
 */
 void layer_init(layer& l, int Ax, int Ay, int Wx, int Wy, int seed) {
     l.W = matrix_init(Wx, Wy, seed);
@@ -245,10 +256,10 @@ int delete_layer(layer &l) {
 void forward_pass_global(layer& l, data_t *A, int Ax, int Ay) {
     // copy A from Host to Device
     assert(l.A->cols == l.W->rows);
-    l.A.data_h = A;
-    CUDA_SAFE_CALL(cudaMemcpy(l.A.data_d, A, Ax*Ay*sizeof(data_t),
+    l.A->data_h = A;
+    CUDA_SAFE_CALL(cudaMemcpy(l.A->data_d, A, Ax*Ay*sizeof(data_t),
                                             cudaMemcpyHostToDevice));
-    
+
     // call forward pass kernel
     dim3 block(BLOCK_SIZE_W, BLOCK_SIZE_W);
     dim3 grid((l.Z->rows+block.x-1)/block.x, (l.Z->cols+block.y-1)/block.y);
@@ -258,11 +269,11 @@ void forward_pass_global(layer& l, data_t *A, int Ax, int Ay) {
                                   l.b->data_d,
                                   l.W->rows, l.W->cols,
                                   l.A->rows, l.A->cols);
-    
+
     // copy Z from device to host
-    CUDA_SAFE_CALL(cudaMemcpy(l.Z.data_h, l.Z.data_d, Ax*Ay*sizeof(data_t),
+    CUDA_SAFE_CALL(cudaMemcpy(l.Z->data_h, l.Z->data_d, Ax*Ay*sizeof(data_t),
                                   cudaMemcpyDeviceToHost));
-    
+
 }
 
 /* backward pass call from host */
@@ -272,16 +283,16 @@ void back_propagation_global(layer& l, data_t *dZ, data_t lr) {
     int dZx = l.dZ->rows; int dZy = l.dZ->cols;
     int bx = l.b->rows;
     // copy dZ from host to device
-    l.dZ.data_h = dZ;
-    CUDA_SAFE_CALL(cudaMemcpy(l.dZ.data_d, dZ, dZx*dZy*sizeof(data_t),
+    l.dZ->data_h = dZ;
+    CUDA_SAFE_CALL(cudaMemcpy(l.dZ->data_d, dZ, dZx*dZy*sizeof(data_t),
                                             cudaMemcpyHostToDevice));
-    
-    // call back prop kernel calls and weight and bias update 
+
+    // call back prop kernel calls and weight and bias update
     dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
     dim3 grid_W((Ax+block_W.x-1)/block_W.x, (Ay+block_W.y-1)/block_W.y);
     dim3 block_b(BLOCK_SIZE_b);
     dim3 num_blocks_b((dZy*dZx+block_b.x-1)/block_b.x);
-    
+
     FFNNBP_global<<<grid_W,block_W>>>(l.dA->data_d, l.W->data_d, l.dZ->data_d,
                                       Wx, Wy, dZx, dZy);
     // cudaDeviceSynchronize ??????????
@@ -289,18 +300,18 @@ void back_propagation_global(layer& l, data_t *dZ, data_t lr) {
                                       dZx, dZy, bx, lr);
     // cudaDeviceSynchronize ??????????
     FFNNUW_global<<<grid_W,block_W>>>(l.W->data_d, l.dZ->data_d, l.A->data_d,
-                                      dZx, dZy, Ax, Ay, lr); 
-    
-    // copy results of dA, W, b from devic to host 
-    CUDA_SAFE_CALL(cudaMemcpy(l.dA.data_h, l.dA.data_d, Ax*Ay*sizeof(data_t),
+                                      dZx, dZy, Ax, Ay, lr);
+
+    // copy results of dA, W, b from devic to host
+    CUDA_SAFE_CALL(cudaMemcpy(l.dA->data_h, l.dA->data_d, Ax*Ay*sizeof(data_t),
                                   cudaMemcpyDeviceToHost));
-    CUDA_SAFE_CALL(cudaMemcpy(l.W.data_h, l.W.data_d, Wx*Wy*sizeof(data_t),
+    CUDA_SAFE_CALL(cudaMemcpy(l.W->data_h, l.W->data_d, Wx*Wy*sizeof(data_t),
                                   cudaMemcpyDeviceToHost));
-    CUDA_SAFE_CALL(cudaMemcpy(l.b.data_h, l.b.data_d, bx*1*sizeof(data_t),
+    CUDA_SAFE_CALL(cudaMemcpy(l.b->data_h, l.b->data_d, bx*1*sizeof(data_t),
                                   cudaMemcpyDeviceToHost));
 }
 
-/* TO DO 
+/* TO DO
 Allocate memory on cuda in functions
 copy values to device, send_matrix_to_device
 copy values from device get_matrix_from_device

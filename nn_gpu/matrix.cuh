@@ -54,9 +54,7 @@ Output: A*B stored in out and 0 on success. returns -1 on failure
 __host__
 int MMM(matrix *A, matrix *B, matrix *out);
 
-/* TO DO
-Add cuda memory allocation
-delete cuda matrix
-copy host to device
-copy device to host
+/*
+__host__
+data_t * copy_matrix(data_t *B, int Bx, int By);
 */

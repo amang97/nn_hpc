@@ -4,11 +4,25 @@
 /******************************************************************************/
 /* Libraries */
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "matrix.cuh"
+#include "nnlayer.cuh"
 /******************************************************************************/
 /* Parameters */
 /******************************************************************************/
 #define BLOCK_SIZE_b    256
+// Assertion to check for errors
+#define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
+{
+  if (code != cudaSuccess)
+  {
+    fprintf(stderr, "CUDA_SAFE_CALL: %s %s %d\n",
+                                       cudaGetErrorString(code), file, line);
+    if (abort) exit(code);
+  }
+}
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
@@ -104,9 +118,10 @@ void RELU_forward(layer& l) {
     dim3 block(BLOCK_SIZE_b);
     dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
     RELU_forward_global<<<num_blocks,block>>>(l.A->data_d, l.Z->data_d, Zx, Zy);
-    // copy results of A from device to host 
-    CUDA_SAFE_CALL(cudaMemcpy(l.A.data_h, l.A.data_d, Ax*Ay*sizeof(data_t),
-    cudaMemcpyDeviceToHost));
+    // copy results of A from device to host
+    CUDA_SAFE_CALL(cudaMemcpy(l.A->data_h, l.A->data_d,
+                              (l.A->rows*l.A->cols)*sizeof(data_t),
+                              cudaMemcpyDeviceToHost));
 }
 
 /* Host calls to GPU for RELU for backProp */
@@ -118,8 +133,8 @@ void RELU_back_propagation(layer& l, data_t lr) {
                                                 l.dA->data_d,
                                                 l.Z->data_d,
                                                 Zx, Zy);
-    // copy results of A from device to host 
-    CUDA_SAFE_CALL(cudaMemcpy(l.dZ.data_h, l.dZ.data_d, Zx*Zy*sizeof(data_t),
+    // copy results of A from device to host
+    CUDA_SAFE_CALL(cudaMemcpy(l.dZ->data_h, l.dZ->data_d, Zx*Zy*sizeof(data_t),
     cudaMemcpyDeviceToHost));
 }
 
@@ -128,10 +143,11 @@ void Sigmoid_forward(layer& l) {
     int Zx = l.Z->rows; int Zy = l.Z->cols;
     dim3 block(BLOCK_SIZE_b);
     dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
-    Sigmoid_Forward_global<<<num_blocks,block>>>(l.A->data_d, l.Z->data_d, Zx, Zy);    
-    // copy results of A from device to host 
-    CUDA_SAFE_CALL(cudaMemcpy(l.A.data_h, l.A.data_d, Ax*Ay*sizeof(data_t),
-    cudaMemcpyDeviceToHost));
+    Sigmoid_Forward_global<<<num_blocks,block>>>(l.A->data_d, l.Z->data_d, Zx, Zy);
+    // copy results of A from device to host
+    CUDA_SAFE_CALL(cudaMemcpy(l.A->data_h, l.A->data_d,
+                              (l.A->rows*l.A->cols)*sizeof(data_t),
+                              cudaMemcpyDeviceToHost));
 }
 
 /* Host calls to GPU for Sigmoid for backprop*/
@@ -143,8 +159,7 @@ void Sigmoid_back_propagation(layer& l, data_t lr) {
                                                 l.dA->data_d,
                                                 l.Z->data_d,
                                                 Zx, Zy);
-    // copy results of A from device to host 
-    CUDA_SAFE_CALL(cudaMemcpy(l.dZ.data_h, l.dZ.data_d, Zx*Zy*sizeof(data_t),
+    // copy results of A from device to host
+    CUDA_SAFE_CALL(cudaMemcpy(l.dZ->data_h, l.dZ->data_d, Zx*Zy*sizeof(data_t),
     cudaMemcpyDeviceToHost));
-    return (matrix *)l.dZ;
 }
