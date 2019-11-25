@@ -11,6 +11,18 @@
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
+// Assertion to check for errors
+#define CUDA_SAFE_CALL(ans) { gpuAssert((ans), (char *)__FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
+{
+  if (code != cudaSuccess)
+  {
+    fprintf(stderr, "CUDA_SAFE_CALL: %s %s %d\n",
+                                       cudaGetErrorString(code), file, line);
+    if (abort) exit(code);
+  }
+}
+
 /* Matrix Allocation on host
     Input: num of rows, num of cols
     Output: allocated memory pointer to matrix type
@@ -27,9 +39,12 @@ matrix * matrix_allocate(int rows, int cols) {
     // check if continuous memory allocation for data failed
     if (!(mat_data)) return NULL;
 
+    // Allocate host memory
     m -> rows = rows;
     m -> cols = cols;
-    m -> data = mat_data;
+    m -> data_h = mat_data;
+    // Allocate device memory
+    CUDA_SAFE_CALL(cudaMalloc(&(m->data_d), N*sizeof(data_t)));
     return m;
 }
 
@@ -44,13 +59,17 @@ Output: NULL in case the rows or column are not positive, or failure in memory
 __host__
 matrix * matrix_init(int rows, int cols, int seed) {
     matrix *m = matrix_allocate(rows,cols);
-    // initializate matrix data with random values if seed
+    // initializate matrix data with random values if seed on host
     int i;
+    int N = rows*cols;
     if (seed) {
         srand(seed);
         for (i = 0; i < N; i++)
-            m -> data[i] = (data_t)rand();
-    } else for (i = 0; i < N; i++) m -> data[i] = (data_t)0; 
+            m -> data_h[i] = (data_t)rand();
+    } else for (i = 0; i < N; i++) m -> data_h[i] = (data_t)0;
+    // copy host data to device
+    CUDA_SAFE_CALL(cudaMemcpy(m->data_d, m->data_h, N*sizeof(data_t),
+                                                    cudaMemcpyHostToDevice));
     return m;
 }
 
@@ -61,8 +80,8 @@ Output: 0 on successfull deletion of matrix, -1 otherwise
 __host__
 int matrix_delete(matrix *mat) {
     if (!mat) return -1;
-    assert(mat -> data);
-    free(mat -> data);
+    assert(mat -> data_h); free(mat -> data_h);
+    CUDA_SAFE_CALL(cudaFree(mat -> data_d));
     free(mat);
     return 0;
 }
