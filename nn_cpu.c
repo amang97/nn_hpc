@@ -8,16 +8,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include <time.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Defination
-#define GIG 3.3e9
-#define THREADS 1
-#define NUMINPUTS 2
+#define GIG             1000000000
+#define THREADS         1
+#define INPUTSIZE       784
 #define NUMHIDDENLAYERS 1
-#define NUMOUTPUTS 1
-#define BATCH_SIZE 4
+#define NUMOUTPUTS      10
+#define BATCH_SIZE      4
+#define EPOCHS          1
+#define NUMINPUTSTRAIN  60000
+#define NUMINPUTSTEST   10000
+#define BUFFER_SIZE     5120
 //static const int numTrainingSets = 4;
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Relu(x)
@@ -42,7 +47,8 @@ float drelu(float x)
   }
   else if(x == 0)
   {
-    return ((float)rand() / (float)RAND_MAX);
+    //return ((float)rand() / (float)RAND_MAX);
+    return 0;
   }
   else
   {
@@ -64,6 +70,21 @@ int result_calculator(float * out_array, int length)
   }
   return max_value_output_node;
 }
+
+// Calculates Time Spent
+struct timespec diff(struct timespec start, struct timespec end)
+{
+  struct timespec temp;
+  if ((end.tv_nsec-start.tv_nsec)<0) {
+    temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+  } else {
+    temp.tv_sec = end.tv_sec-start.tv_sec;
+    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+  }
+  return temp;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Initializer for the weights and the biases for the Neural Network
 float init_weight()
@@ -72,7 +93,7 @@ float init_weight()
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Matrix Vector multiplication
-void mvmr(float* A, float * x, float * result, int num_row, int num_col, int bias)
+void mvmr(float* A, float * x, float * result, int num_row, int num_col, float bias)
 {
   int i,j;
   for(i = 0; i < num_row; i++)
@@ -80,11 +101,19 @@ void mvmr(float* A, float * x, float * result, int num_row, int num_col, int bia
     float sum = 0;
     for(j = 0; j < num_col; j++)
     {
+      //printf("%0.2f,",A[(i*num_col) + j]);
       sum = sum + (A[(i*num_col) + j] * x[j]);
     }
     result[i] = relu(sum + bias);
+    //printf("\n%f,",sum);
+    //result[i] = sum;
   }
-
+  //printf("\nresult:\n");
+  //for(i = 0; i < num_col; i++)
+  //{
+  //  printf("%f,",x[i]);
+  //}
+  //printf("\n");
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -101,12 +130,15 @@ int main(int argc, char *argv[])
   }
   else
   {
-    int i;
+    int i,j,iteration;
 
-    srand(1527);
+    srand(time(0));
 
     int hidden_Layer_node_count[NUMHIDDENLAYERS];
-    float training_inputs[NUMINPUTS];
+    float training_inputs[NUMINPUTSTRAIN][INPUTSIZE];
+    int training_labels[NUMINPUTSTRAIN];
+    float testing_inputs[NUMINPUTSTEST][INPUTSIZE];
+    int testing_labels[NUMINPUTSTEST];
     float * hiddenLayer_output[NUMHIDDENLAYERS];
     float outputLayer_output[NUMOUTPUTS];
     float hiddenLayerBiases[NUMHIDDENLAYERS];
@@ -132,13 +164,13 @@ int main(int argc, char *argv[])
       int j;
       if(i == 0)
       {
-        hiddenWeights[0] = (float*)calloc(hidden_Layer_node_count[0]*784, sizeof(float));
+        hiddenWeights[0] = (float*)calloc(hidden_Layer_node_count[0]*INPUTSIZE, sizeof(float));
         if(hiddenWeights[0] == NULL)
         {
           printf("Memory not allocated\n");
           return 0;
         }
-        for(j = 0 ; j < hidden_Layer_node_count[0]*784; j++)
+        for(j = 0 ; j < hidden_Layer_node_count[0]*INPUTSIZE; j++)
         {
           hiddenWeights[0][j] = init_weight();
         }
@@ -172,6 +204,7 @@ int main(int argc, char *argv[])
     printf("Initialized Weights for Hidden and Output Layer\n");
 
     // Initialize biases //////////////////////////////////////////////////////
+
     // For Hidden Layers
     for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
@@ -186,16 +219,115 @@ int main(int argc, char *argv[])
     {
       hiddenLayer_output[i] = (float*)calloc(hidden_Layer_node_count[i],sizeof(float));
     }
-    printf("Alllocated memory for Neural Network Nodes\n");
+    printf("Allocated memory for Neural Network Nodes\n");
 
-    // Feed Forward Algorithm /////////////////////////////////////////////////
-    for(i = 0; i < NUMHIDDENLAYERS; i++)
+    // Load Input /////////////////////////////////////////////////////////////
+    FILE * pInput;
+    char buf[BUFFER_SIZE];
+    pInput = fopen("./mnist_train.csv","r");
+    if(pInput == NULL)
     {
-      if(i == 0)
+      printf("Error: Can\'t read or find the training file\n");
+    }
+    else
+    {
+      fgets(buf, sizeof(buf), pInput);
+      for(iteration = 0 ; iteration < NUMINPUTSTRAIN; iteration++)
       {
-        //hiddenLayer_output[i] = mvmr()
+        fgets(buf, sizeof(buf), pInput);
+        char * tok = strtok(buf, ",");
+        training_labels[iteration] = atoi(tok);
+        for(i = 0; i < INPUTSIZE; i++)
+        {
+          tok = strtok(NULL,",");
+          if(tok == NULL)
+          {
+            printf("Can't read Input at %d row, %d column\n",iteration,(i+1));
+            break;
+          }
+          float value = (float)atof(tok);
+          if(value != 0)
+          {
+            value = value / 255;
+          }
+          training_inputs[iteration][i] = value;
+        }
       }
     }
+    int closed = fclose(pInput);
+    pInput = fopen("./mnist_test.csv","r");
+    if(pInput == NULL)
+    {
+      printf("Error: Can\'t read or find the training file\n");
+    }
+    else
+    {
+      fgets(buf, sizeof(buf), pInput);
+      for(iteration = 0 ; iteration < NUMINPUTSTEST; iteration++)
+      {
+        fgets(buf, sizeof(buf), pInput);
+        char * tok = strtok(buf, ",");
+        testing_labels[iteration] = atoi(tok);
+        for(i = 0; i < INPUTSIZE; i++)
+        {
+          tok = strtok(NULL,",");
+          if(tok == NULL)
+          {
+            printf("Can't read Input at %d row, %d column\n",iteration,(i+1));
+            break;
+          }
+          float value = (float)atof(tok);
+          if(value != 0)
+          {
+            value = value / 255;
+          }
+          testing_inputs[iteration][i] = value;
+        }
+      }
+    }
+
+    printf("Loaded Training and Testing Inputs\n");
+    /*for(i = 0; i < INPUTSIZE; i++)
+    {
+      printf("%0.2f,",training_inputs[0][i]);
+    }
+    printf("\n");*/
+
+    // Training Algorithm /////////////////////////////////////////////////////
+
+    for(iteration = 0; iteration < EPOCHS; iteration++)
+    {
+      // Feed Forward Algorithm ///////////////////////////////////////////////
+      int correct_answers = 0;
+      struct timespec time1, time2;
+      struct timespec time_stamp;
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+      for(i = 0; i < NUMINPUTSTRAIN; i++)
+      {
+        for(j = 0; j < NUMHIDDENLAYERS; j++)
+        {
+          if(j == 0)
+          {
+            mvmr(hiddenWeights[0], training_inputs[i], hiddenLayer_output[0],hidden_Layer_node_count[0],INPUTSIZE,hiddenLayerBiases[0]);
+          }
+          else
+          {
+            mvmr(hiddenWeights[j], hiddenLayer_output[j-1], hiddenLayer_output[j],hidden_Layer_node_count[j],hidden_Layer_node_count[j-1],hiddenLayerBiases[j]);
+          }
+        }
+        mvmr(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
+        int guess_label = result_calculator(outputLayer_output, NUMOUTPUTS);
+        if(guess_label == training_labels[i])
+        {
+          correct_answers++;
+        }
+      }
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+      time_stamp = diff(time1,time2);
+      printf("Feed Forwarded for Epoch %d\n",iteration);
+      printf("Time Taken: %0.2f seconds\nAccuracy: %0.3f\n",(((float)(GIG * time_stamp.tv_sec + time_stamp.tv_nsec)) / GIG), (((float)correct_answers) * 100 / NUMINPUTSTRAIN));
+    }
+
 
     // Free Initialized Weights/////////////////////////////////////////////////
     for(i = 0; i < NUMHIDDENLAYERS; i++)
