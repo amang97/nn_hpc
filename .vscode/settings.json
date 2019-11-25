@@ -4,4 +4,20 @@
         "assert.h": "c"
     }
     "editor.rulers": [80]
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "support.function.cuda-cpp",
+                "settings": {
+                    "foreground": "#56b6c2"
+                }
+            },
+            {
+                "scope": "keyword.function.qualifier.cuda-cpp",
+                "settings": {
+                    "foreground": "#56b6c2"
+                }
+            }
+        ]
+    }
 }
