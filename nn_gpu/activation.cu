@@ -21,7 +21,7 @@ data_t sigmoid(data_t x) {
     return ((data_t)1) / ((data_t)1 + (data_t)exp(-x));
 }
 
-/* RELU Activation Forward pass*/
+/* RELU Activation Forward pass */
 /******************************************************************************/
 __global__
 void RELU_forward_global(data_t *A, data_t *Z, int Zx, int Zy) {

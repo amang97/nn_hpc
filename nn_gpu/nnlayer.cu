@@ -5,9 +5,14 @@
 /* Libraries */
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "matrix.cuh"
 #include "nnlayer.cuh"
-
+/******************************************************************************/
+/* Parameters */
+/******************************************************************************/
+#define BLOCK_SIZE_W    8
+#define BLOCK_SIZE_b    256
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
@@ -206,3 +211,74 @@ __global__
 void FFNNUb_unified(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr) {
 
 }
+
+/* Initializing a layer with random weights and 0 bias
+    Input: refrence to layer, A, W, b, Shape of W, initialization seed
+    Output: W initialized randomly according to seed, bias col vector of 0 
+*/
+void layer_init(layer& l, matrix* A, matrix *W, matrix *b, int Wx, int Wy, 
+    int seed) {
+    int Ax = A->rows;
+    int Ay = A->cols;
+    l.A = A;
+    l.W = matrix_init(Wx, Wy, seed);
+    l.b = matrix_init(Wx, 1, 0);
+    l.Z = matrix_allocate(Ax, Wy);
+    l.dA = matrix_allocate(Ax, Ay);
+}
+
+/* Deleting a layer
+    Input: reference to layer struct
+    output: 0 if freeing memory success, -1 otherwise
+*/
+int delete_layer(layer &l) {
+    int freeW = matrix_delete(l.W);
+    int freeA = matrix_delete(l.A);
+    int freeb = matrix_delete(l.b);
+    int freeZ = matrix_delete(l.Z);
+    int freedA = matrix_delete(l.dA);
+    if ((!freeW) || (!freeb) || (!freeA) || (!freeZ) || (!freedA)) return -1;
+    return 0;
+}
+
+/* Forward pass call from host */
+matrix * forward_pass(layer& l) {
+    assert(l.A->cols == l.W->rows);
+    dim3 block(BLOCK_SIZE_W, BLOCK_SIZE_W);
+    dim3 grid((l.Z->rows+block.x-1)/block.x, (l.Z->cols+block.y-1)/block.y);
+    FFNNFP_global<<<grid,block>>>(l.Z->data,
+                                  l.W->data,
+                                  l.A->data,
+                                  l.b->data,
+                                  l.W->rows, l.W->cols,
+                                  l.A->rows, l.A->cols);
+    return (matrix *)l.Z;
+}
+
+/* backward pass call from host */
+matrix * back_propagation(layer& l, matrix *dZ, data_t lr) {
+    data_t *W = l.W->data; int Wx = l.W->rows; int Wy = l.W->cols;
+    data_t *A = l.A->data; int Ax = l.A->rows; int Ay = l.A->cols;
+    data_t *dz = dZ->data; int dzx = dZ->rows; int dzy = dZ->cols;
+    data_t *b = l.b->data; int bx = l.b->rows;
+    data_t *dA = l.dA->data;
+
+    dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
+    dim3 grid_W((Ax+block_W.x-1)/block_W.x, (Ay+block_W.y-1)/block_W.y);
+    dim3 block_b(BLOCK_SIZE_b);
+    dim3 num_blocks_b((dzy*dzx+block_b.x-1)/block_b.x);
+    
+    FFNNBP_global<<<grid_W,block_W>>>(dA, W, dz, Wx, Wy, dzx, dzy);
+    // cudaDeviceSynchronize ??????????
+    FFNNUW_global<<<grid_W,block_W>>>(W, dz, A, dzx, dzy, Ax, Ay, lr); 
+    // cudaDeviceSynchronize ??????????
+    FFNNUb_global<<<num_blocks_b,block_b>>>(b, dz, dzx, dzy, bx, lr);
+
+    return (matrix *)l.dA;
+}
+
+/* TO DO 
+Allocate memory on cuda in functions
+copy values to device, send_matrix_to_device
+copy values from device get_matrix_from_device
+*/

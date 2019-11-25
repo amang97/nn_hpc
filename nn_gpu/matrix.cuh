@@ -17,10 +17,16 @@ typedef struct Matrix {
 /******************************************************************************/
 /* prototypes and usage */
 /******************************************************************************/
+/* Matrix Allocation on host
+    Input: num of rows, num of cols
+    Output: allocated memory pointer to matrix type
+*/
+__host__
+matrix * matrix_allocate(int rows, int cols);
 
 /* Matrix initialization on Host
 Input:  number of rows and columns. Initialization seed for filling the matrix
-        and reproducability
+        and reproducability. if seed = 0, matrix initialized with 0
 Output: NULL in case the rows or column are not positive, or failure in memory
         allocation
         on success, a pointer to matrix type of size rows*cols with randomly
@@ -48,29 +54,9 @@ Output: A*B stored in out and 0 on success. returns -1 on failure
 __host__
 int MMM(matrix *A, matrix *B, matrix *out);
 
-/* Matrix Multiplication kernel with global memory
-Input: Matrix A, B, out
-Output: A*B stored in out and 0 on success. returns -1 on failure
-        Assumes inner dimensions match, returns -2 if they dont match
-        Assumes global memory view
+/* TO DO
+Add cuda memory allocation
+delete cuda matrix
+copy host to device
+copy device to host
 */
-__global__
-void MMM_global(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By);
-
-/* Matrix Multiplication kernel with shared memory
-Input: Matrix A, B, out
-Output: A*B stored in out and 0 on success. returns -1 on failure
-        Assumes inner dimensions match, returns -2 if they dont match
-        Assumes shared memory view
-*/
-__global__
-void MMM_shared(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By);
-
-/* Matrix Multiplication kernel with unified memory
-Input: Matrix A, B, out
-Output: A*B stored in out and 0 on success. returns -1 on failure
-        Assumes inner dimensions match, returns -2 if they dont match
-        Assumes unified memory view
-*/
-__global__
-void MMM_unified(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By);

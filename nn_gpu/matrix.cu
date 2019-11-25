@@ -11,16 +11,12 @@
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
-/* Matrix initialization on Host
-Input:  number of rows and columns. Initialization seed for filling the matrix
-        and reproducability
-Output: NULL in case the rows or column are not positive, or failure in memory
-        allocation
-        on success, a pointer to matrix type of size rows*cols with randomly
-        initialized data of type data_t
+/* Matrix Allocation on host
+    Input: num of rows, num of cols
+    Output: allocated memory pointer to matrix type
 */
 __host__
-matrix * matrix_init(int rows, int cols, int seed) {
+matrix * matrix_allocate(int rows, int cols) {
     // small check to ensure rows and cols are positive numbers
     if (rows <= 0 || cols <= 0) return NULL;
     int N = rows*cols;
@@ -34,12 +30,27 @@ matrix * matrix_init(int rows, int cols, int seed) {
     m -> rows = rows;
     m -> cols = cols;
     m -> data = mat_data;
+    return m;
+}
 
-    // initializate matrix data with random values
-    int i; srand(seed);
-    for (i = 0; i < N; i++)
-        m -> data[i] = (float)rand();
-
+/* Matrix initialization on Host
+Input:  number of rows and columns. Initialization seed for filling the matrix
+        and reproducability
+Output: NULL in case the rows or column are not positive, or failure in memory
+        allocation
+        on success, a pointer to matrix type of size rows*cols with randomly
+        initialized data of type data_t
+*/
+__host__
+matrix * matrix_init(int rows, int cols, int seed) {
+    matrix *m = matrix_allocate(rows,cols);
+    // initializate matrix data with random values if seed
+    int i;
+    if (seed) {
+        srand(seed);
+        for (i = 0; i < N; i++)
+            m -> data[i] = (data_t)rand();
+    } else for (i = 0; i < N; i++) m -> data[i] = (data_t)0; 
     return m;
 }
 
@@ -80,35 +91,3 @@ int MMM(matrix *A, matrix *B, matrix *out) {
     return 0;
 }
 
-/* Matrix Multiplication kernel with global memory
-Input: Matrix A, B, out
-Output: A*B stored in out and 0 on success. returns -1 on failure
-        Assumes inner dimensions match, returns -2 if they dont match
-        Assumes global memory view
-*/
-__global__
-void MMM_global(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By) {
-
-}
-
-/* Matrix Multiplication kernel with shared memory
-Input: Matrix A, B, out
-Output: A*B stored in out and 0 on success. returns -1 on failure
-        Assumes inner dimensions match, returns -2 if they dont match
-        Assumes shared memory view
-*/
-__global__
-void MMM_shared(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By) {
-
-}
-
-/* Matrix Multiplication kernel with unified memory
-Input: Matrix A, B, out
-Output: A*B stored in out and 0 on success. returns -1 on failure
-        Assumes inner dimensions match, returns -2 if they dont match
-        Assumes unified memory view
-*/
-__global__
-void MMM_unified(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By) {
-
-}
