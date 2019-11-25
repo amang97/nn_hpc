@@ -216,11 +216,7 @@ void FFNNUb_unified(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr) 
     Input: refrence to layer, A, W, b, Shape of W, initialization seed
     Output: W initialized randomly according to seed, bias col vector of 0 
 */
-void layer_init(layer& l, matrix* A, matrix *W, matrix *b, int Wx, int Wy, 
-    int seed) {
-    int Ax = A->rows;
-    int Ay = A->cols;
-    l.A = A;
+void layer_init(layer& l, int Wx, int Wy, int seed) {
     l.W = matrix_init(Wx, Wy, seed);
     l.b = matrix_init(Wx, 1, 0);
     l.Z = matrix_allocate(Ax, Wy);
