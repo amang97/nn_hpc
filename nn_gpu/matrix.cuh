@@ -55,7 +55,7 @@ Output: A*B stored in out and 0 on success. returns -1 on failure
         Assumes global memory view
 */
 __global__
-void MMM_global(matrix *A, matrix *B, matrix *out);
+void MMM_global(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By);
 
 /* Matrix Multiplication kernel with shared memory
 Input: Matrix A, B, out
@@ -64,7 +64,7 @@ Output: A*B stored in out and 0 on success. returns -1 on failure
         Assumes shared memory view
 */
 __global__
-void MMM_shared(matrix *A, matrix *B, matrix *out);
+void MMM_shared(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By);
 
 /* Matrix Multiplication kernel with unified memory
 Input: Matrix A, B, out
@@ -73,4 +73,4 @@ Output: A*B stored in out and 0 on success. returns -1 on failure
         Assumes unified memory view
 */
 __global__
-void MMM_unified(matrix *A, matrix *B, matrix *out);
+void MMM_unified(data_t *out, data_t *A, data_t *B, int Ax, int Ay, int By);

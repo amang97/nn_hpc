@@ -3,4 +3,5 @@
         "stdio.h": "c",
         "assert.h": "c"
     }
+    "editor.rulers": [80]
 }
