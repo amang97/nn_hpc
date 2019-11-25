@@ -1,8 +1,6 @@
-/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt
+/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt              */
 /******************************************************************************/
-/* Matrix library implementation for CUDA in C
-*/
-#pragma once    /* File Guard */
+/* Matrix library implementation for CUDA in C                                */
 /******************************************************************************/
 /* Libraries */
 /******************************************************************************/
@@ -14,7 +12,7 @@
 /* Implementations */
 /******************************************************************************/
 /* Matrix initialization on Host
-Input:  number of rows and columns. Initialization seed for filling the matrix 
+Input:  number of rows and columns. Initialization seed for filling the matrix
         and reproducability
 Output: NULL in case the rows or column are not positive, or failure in memory
         allocation
@@ -29,10 +27,10 @@ matrix * matrix_init(int rows, int cols, int seed) {
 
     // memory allocation of matrix
     matrix *m = (matrix *) malloc(sizeof(matrix));
-    data_t *mat_data = (data_t *)calloc(N,sieof(data_t));
+    data_t *mat_data = (data_t *)calloc(N,sizeof(data_t));
     // check if continuous memory allocation for data failed
     if (!(mat_data)) return NULL;
-    
+
     m -> rows = rows;
     m -> cols = cols;
     m -> data = mat_data;
@@ -70,14 +68,14 @@ int MMM(matrix *A, matrix *B, matrix *out) {
     if ((A->cols != B->rows) ||
         (A->rows != out->rows) ||
         (B->cols != out->cols)) return -2;
-    
+
     int row, col, k;
     for (col = 1; col <= B->cols; col++)
         for (row = 1; row <= A->rows; row++) {
             data_t val = (data_t)0;
             for (k = 1; k <= A->cols; k++)
                 val += ELEMENT(A, row, k) * ELEMENT(B, k, col);
-            ELEMENT(prod, row, col) = val;
+            ELEMENT(out, row, col) = val;
         }
     return 0;
 }
@@ -112,5 +110,5 @@ Output: A*B stored in out and 0 on success. returns -1 on failure
 */
 __global__
 void MMM_unified(matrix *A, matrix *B, matrix *out) {
-    
+
 }
