@@ -20,7 +20,7 @@
 #define NUMOUTPUTS      10
 #define BATCH_SIZE      4
 #define EPOCHS          1
-#define NUMINPUTSTRAIN  60000
+#define NUMINPUTSTRAIN  60
 #define NUMINPUTSTEST   10000
 #define BUFFER_SIZE     5120
 //static const int numTrainingSets = 4;
@@ -41,19 +41,26 @@ float relu(float x)
 // Calculates Derivative of Relu(x)
 float drelu(float x)
 {
-  if(x < 0)
+  if(x <= 0)
   {
-    return 0;
-  }
-  else if(x == 0)
-  {
-    //return ((float)rand() / (float)RAND_MAX);
     return 0;
   }
   else
   {
     return 1;
   }
+}
+
+// Calculates Sigmoid(x)
+float Sigmoid(float x)
+{
+  return (1 / (1 + exp(-x)));
+}
+
+// Calculates Derivative of Sigmoid(x)
+float dSigmoid(float x)
+{
+  return (x * (1 - x));
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Result(x)
@@ -105,6 +112,29 @@ void mvmr(float* A, float * x, float * result, int num_row, int num_col, float b
       sum = sum + (A[(i*num_col) + j] * x[j]);
     }
     result[i] = relu(sum + bias);
+    //printf("\n%f,",sum);
+    //result[i] = sum;
+  }
+  //printf("\nresult:\n");
+  //for(i = 0; i < num_col; i++)
+  //{
+  //  printf("%f,",x[i]);
+  //}
+  //printf("\n");
+}
+
+void mvms(float* A, float * x, float * result, int num_row, int num_col, float bias)
+{
+  int i,j;
+  for(i = 0; i < num_row; i++)
+  {
+    float sum = 0;
+    for(j = 0; j < num_col; j++)
+    {
+      //printf("%0.2f,",A[(i*num_col) + j]);
+      sum = sum + (A[(i*num_col) + j] * x[j]);
+    }
+    result[i] = Sigmoid(sum + bias);
     //printf("\n%f,",sum);
     //result[i] = sum;
   }
@@ -317,11 +347,18 @@ int main(int argc, char *argv[])
         }
         mvmr(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
         int guess_label = result_calculator(outputLayer_output, NUMOUTPUTS);
+        //printf("%d,", guess_label);
+        for(j = 0; j < NUMOUTPUTS; j++)
+        {
+          printf("%f,", outputLayer_output[j]);
+        }
+        printf("\n");
         if(guess_label == training_labels[i])
         {
           correct_answers++;
         }
       }
+      //printf("\n\n\n");
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
       time_stamp = diff(time1,time2);
       printf("Feed Forwarded for Epoch %d\n",iteration);
