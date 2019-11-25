@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "matrix.cuh"
-#include "layer.cuh"
+#include "nnlayer.cuh"
 
 /******************************************************************************/
 /* Parameters */
@@ -33,7 +33,7 @@ void FFNNFP_global(data_t *Z, data_t *W, data_t *A, data_t *b, int Wx, int Wy,
     int Zx = Ax;
     int Zy = Wy;
     data_t val = (data_t)0;
-    
+
     int k;
     if (row < Zy && col < Zx) {
         for (k = 0; k < Wx; k++) {
@@ -87,9 +87,11 @@ void FFNNBP_global(data_t *dA, data_t *W, data_t *dZ, int Wx, int Wy,
 
     int k;
     if (row < dAy && col < dAx) {
-        val += W[k*Wx+row] * dZ[i*dZx+col];
+      for (k = 0; k < Wy; k++) {
+          val += W[k*Wx+row] * dZ[k*dZx+col];
+      }
+      dA[row*dAx+col] = val;
     }
-    dA[row*dAx+col] = val;
 }
 
 /* Back Propagation using shared memory
@@ -113,7 +115,7 @@ Output: dA = W'.dZ, output saved in location pointed by output data matrix
 __global__
 void FFNNBP_unified(data_t *dA, data_t *W, data_t *dZ, int Wx, int Wy,
     int dZx, int dZy) {
-    
+
 }
 
 /******************************************************************************/
@@ -142,7 +144,7 @@ void FFNNUW_global(data_t *W, data_t *dZ, data_t *A, int dZx, int dZy, int Ax,
         for (k = 0; k < dZx; k++) {
             val += dZ[row*dZx+k] * A[col*Ax+k];
         }
-        W[row*Wx+col] -= -lr*(val/Ax);
+        W[row*Wx+col] -= lr*(val/Ax);
     }
 }
 
@@ -183,7 +185,7 @@ void FFNNUb_global(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr) {
     if (index < dZx*dZy) {
         int zx = index % dZx;
         int zy = index / dZx;
-        // do an atomic add to avoid race conditions 
+        // do an atomic add to avoid race conditions
         // (because many threads might write to same memory location  )
         atomicAdd(&b[zy],-lr*(dZ[zy*dZx+zx]/dZx));
     }
