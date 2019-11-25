@@ -66,7 +66,7 @@ void Sigmoid_Forward_unified(data_t *A, data_t *Z, int Zx, int Zy) {
 __global__
 void RELU_backward_global(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < Zx * zy) {
+    if (index < Zx * Zy) {
         dZ[index] = (Z[index] > 0) ? dA[index] : 0;
     }
 }
