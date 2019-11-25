@@ -15,6 +15,7 @@ typedef struct NNLayer {
     matrix *W;  // weights of current layer (Weight weights)
     matrix *A;  // activation of previous layer (Activation Matrix)
     matrix *b;  // bias vector
+    matrix *dA;
 } nnlayer;
 
 /* Feed Forward NN Forward pass (FFNNFP) on a layer */
