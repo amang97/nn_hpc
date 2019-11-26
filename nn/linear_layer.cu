@@ -8,8 +8,8 @@
 #include <assert.h>
 #include <time.h>
 #include "matrix.cuh"
-#include "linear_layer.cuh"
 #include "cuda_utils.cuh"
+#include "linear_layer.cuh"
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
@@ -55,6 +55,19 @@ void ll_init(Linear_Layer *ll, int Wx, int Wy, int seed) {
     // initialize W and b data and copy data H2D
     weight_init(ll); // initialized with random values
     bias_init(ll);  // initialized with 0
+}
+
+int ll_free(Linear_Layer *ll) {
+    int freez = freew = freea = freeb = freeda = -1;
+    if (ll->Z) freez = matrix_free(ll->Z);
+    if (ll->W) freew = matrix_free(ll->w);
+    if (ll->A) freea = matrix_free(ll->A);
+    if (ll->b) freeb = matrix_free(ll->b);
+    if (ll->dA) freeda = matrix_free(ll->dA);
+    if (freez || freew || freea || freeb || freeda) return -1;
+    if (!ll) return -1;
+    free(ll);
+    return 0;
 }
 
 __global__
@@ -186,10 +199,18 @@ Matrix * ll_back_propagation_global(Linear_Layer * ll, Matrix *dZ, data_t lr) {
     return ll->dA;
 }
 
-Matrix getW(Linear_Layer *ll) {
+Matrix getW(Linear_Layer *ll) const {
     return *(ll->W);
 }
 
-Matrix getb(Linear_Layer *ll) {
+Matrix getb(Linear_Layer *ll) const {
     return *(ll->b);
+}
+
+int getWx(Linear_Layer *ll) const {
+    return ll->W->rows;
+}
+
+int getWy(Linear_Layer *ll) const {
+    return ll->W->cols;
 }

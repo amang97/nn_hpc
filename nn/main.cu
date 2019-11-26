@@ -7,6 +7,8 @@
 #include "matrix.cuh"
 #include "cuda_utils.cuh"
 #include "nn_param.cuh"
+#include "linear_layer.cuh"
+#include "loss.cuh"
 
 /* Main */
 int main() {
@@ -21,15 +23,12 @@ int main() {
     // Set GPU Device
     CUDA_SAFE_CALL(cudaSetDevice(0));
 
-    // // Create a Feed Forward Neural Net (array of layers) and other parameters
-    // layer l[NUM_LAYERS];
-    // data_t lr = LEARNING_RATE;
+    // Create a Feed Forward Neural Net (array of layers) and other parameters
+    layer l[NUM_LAYERS];
+    data_t lr = LEARNING_RATE;
 
-    // // initialize layers
-    // layer_init(l[0], BATCH_SIZE, NUM_FEATURES, NUM_FEATURES, 60, SEED);
-    // layer_init(l[1], NUM_FEATURES, 60, 60, NUM_OUTPUTS, SEED);
-    // layer_init(l[2], 60, NUM_OUTPUTS, NUM_OUTPUTS, 1, SEED);
-    // printf("\nNeural Net layers initialized\n");
+    // initialize layers
+
     
     /* Network Training on GPU */
 

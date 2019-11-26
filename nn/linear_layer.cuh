@@ -28,6 +28,8 @@ void bias_init(Linear_Layer *ll);
 
 void ll_init(Linear_Layer *ll, int Wx, int Wy, int seed);
 
+int ll_free(Linear_Layer *ll);
+
 __global__
 void FFNNFP_global(data_t *Z, data_t *W, data_t *A, data_t *b, int Wx, int Wy,
     int Ax, int Ay);
@@ -50,3 +52,7 @@ Matrix * ll_back_propagation_global(Linear_Layer * ll, Matrix *dZ, data_t lr);
 Matrix getW(Linear_Layer *ll);
 
 Matrix getb(Linear_Layer *ll);
+
+int getWx(Linear_Layer *ll);
+
+int getWy(Linear_Layer *ll);
