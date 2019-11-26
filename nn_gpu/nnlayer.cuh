@@ -6,7 +6,6 @@
 /******************************************************************************/
 /* Libraries */
 #include "matrix.cuh"
-#include "activation.cuh"
 /******************************************************************************/
 /* prototypes and usage */
 /******************************************************************************/
@@ -151,7 +150,7 @@ void FFNNUb_unified(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr);
 
 /* Initializing a layer with random weights and 0 bias
     Input: refrence to layer, A, W, b, Shape of W, initialization seed
-    Output: W initialized randomly according to seed, bias col vector of 0 
+    Output: W initialized randomly according to seed, bias col vector of 0
 */
 void layer_init(layer& l, int Ax, int Ay, int Wx, int Wy, int seed);
 
