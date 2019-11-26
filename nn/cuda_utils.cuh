@@ -1,5 +1,9 @@
+/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt              */
+/******************************************************************************/
 #pragma once /* File Guard */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "matrix.cuh"
 
 // Assertion to check for errors

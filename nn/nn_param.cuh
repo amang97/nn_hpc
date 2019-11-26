@@ -1,3 +1,5 @@
+/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt              */
+/******************************************************************************/
 #pragma once
 
 typedef float data_t;

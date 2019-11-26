@@ -1,3 +1,5 @@
+/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt              */
+/******************************************************************************/
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,12 +22,12 @@ int main() {
     CUDA_SAFE_CALL(cudaSetDevice(0));
     
     // initialize matrices
-    Matrix *W = matrix_init(100,100);
-    matrix_allocate(W,100,100);
-    printf("Weights initializedon device and host")
+    Matrix *W = matrix_init(5,5);
+    matrix_allocate(W,5,5);
+    printf("Weights initializedon device and host");
     print_matrix(W);
     int w = matrix_free(W);
-    if (!w) printf("Weights freed")
+    if (!w) printf("Weights freed");
     // // Create a Feed Forward Neural Net (array of layers) and other parameters
     // layer l[NUM_LAYERS];
     // data_t lr = LEARNING_RATE;

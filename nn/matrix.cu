@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "matrix.cuh"
-#include "cuda_uitls.cuh"
+#include "cuda_utils.cuh"
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
@@ -18,7 +18,7 @@ Matrix * matrix_init(int rows, int cols) {
     // small check to ensure rows and cols are positive numbers
     if (rows <= 0 || cols <= 0) return NULL;
 
-    Matrix *m = (matrix *) malloc(sizeof(matrix));
+    Matrix *m = (Matrix *)malloc(sizeof(Matrix));
     m -> rows = rows;
     m -> cols = cols;
     m -> data_d = NULL;
@@ -32,7 +32,7 @@ __host__
 void matrix_allocate_host(Matrix *A) {
     if (!A->host_assigned) {
         data_t *data_h = (data_t *)calloc(A->rows*A->cols,sizeof(data_t));
-        if (!data_h) {printf("Unable to allocate matrix\n"); return NULL;}
+        if (!data_h) {printf("Unable to allocate matrix\n"); exit(-1);}
         A->data_h = data_h;
         A->host_assigned = true;
     }
@@ -61,7 +61,7 @@ __host__
 int matrix_free(Matrix *A) {
     int d = matrix_free_cuda(A);
     int h = matrix_free_host(A);
-    if (d || h) {prinntf("Unable to free matrix"); return -1;}
+    if (d || h) {printf("Unable to free matrix"); return -1;}
     return 0;
 }
 

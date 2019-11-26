@@ -1,3 +1,5 @@
+/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt              */
+/******************************************************************************/
 #include "cuda_utils.cuh"
 #include "nn_param.cuh"
 #include <assert.h>
@@ -15,7 +17,7 @@ void matrix_allocate_cuda(Matrix *A) {
 }
 
 int matrix_free_cuda(Matrix *A) {
-    if (!A) {printf("freeing NULL pointer\n"); return -1;
+    if (!A) {printf("freeing NULL pointer\n"); return -1;}
     assert(A->data_d);
     CUDA_SAFE_CALL(cudaFree(A->data_d));
     return 0;
