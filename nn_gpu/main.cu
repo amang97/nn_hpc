@@ -39,7 +39,8 @@ int main() {
     int l1 = delete_layer(layers[0]);
     int l2 = delete_layer(layers[1]);
     int l3 = delete_layer(layers[2]);
-    if (!(l1 || l2 || l3))
+
+    if (!(l1) || !(l2) || !(l3))
         printf("Whoa, nnlayers destroyed\n");
     else
         printf("Something went wrong bruh!\n");

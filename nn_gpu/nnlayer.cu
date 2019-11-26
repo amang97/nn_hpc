@@ -247,8 +247,8 @@ int delete_layer(layer &l) {
     int freeA = matrix_delete(l.A);
     int freedA = matrix_delete(l.dA);
     int freedZ = matrix_delete(l.dZ);
-    if ((!freeW) || (!freeb) || (!freeA) || (!freeZ) || (!freedA) || (freedZ))
-        return -1;
+    // printf("%d,%d,%d,%d,%d,%d\n",freeW,freeb,freeZ,freeA,freedA,freedZ);
+    if (freeW || freeb || freeA || freeZ || freedA || freedZ) return -1;
     return 0;
 }
 
