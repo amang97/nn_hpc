@@ -253,7 +253,7 @@ int delete_layer(layer &l) {
 }
 
 /* Forward pass call from host */
-void forward_pass_global(layer& l, data_t *A, int Ax, int Ay) {
+void forward_pass_global(layer& l, matrix *A, int Ax, int Ay) {
     // copy A from Host to Device
     assert(l.A->cols == l.W->rows);
     l.A->data_h = A;
@@ -270,14 +270,14 @@ void forward_pass_global(layer& l, data_t *A, int Ax, int Ay) {
                                   l.W->rows, l.W->cols,
                                   l.A->rows, l.A->cols);
 
-    // copy Z from device to host
-    CUDA_SAFE_CALL(cudaMemcpy(l.Z->data_h, l.Z->data_d, Ax*Ay*sizeof(data_t),
-                                  cudaMemcpyDeviceToHost));
+    // // copy Z from device to host
+    // CUDA_SAFE_CALL(cudaMemcpy(l.Z->data_h, l.Z->data_d, Ax*Ay*sizeof(data_t),
+    //                               cudaMemcpyDeviceToHost));
 
 }
 
 /* backward pass call from host */
-void back_propagation_global(layer& l, data_t *dZ, data_t lr) {
+void back_propagation_global(layer& l, matrix *dZ, data_t lr) {
     int Wx = l.W->rows; int Wy = l.W->cols;
     int Ax = l.A->rows; int Ay = l.A->cols;
     int dZx = l.dZ->rows; int dZy = l.dZ->cols;

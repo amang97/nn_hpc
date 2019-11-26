@@ -6,6 +6,7 @@
 #include "activation.cuh"     // bsize_b
 #include "matrix.cuh"         // data_t
 #include "data.cuh"
+#include "nn.cuh"
 
 /* Neural Net Parameters */
 #define NUM_LAYERS      3
@@ -58,13 +59,22 @@ int main() {
     printf("\nNeural Net layers initialized\n");
     
     // Network Training
-    matrix Y;
-    int epoch, batch, num_batches = (int)(NUM_INPUTS/BATCH_SIZE);
-    for (epoch = 0; epoch < EPOCHS; epoch++) {
+    matrix pred;
+    int epoch;//, batch, num_batches = (int)(NUM_INPUTS/BATCH_SIZE);
+    matrix *X = matrix_allocate(BATCH_SIZE, NUM_FEATURES);
+    matrix *Y = matrix_allocate(BATCH_SIZE, 1);
+    X->data_h = mnist_train->images; Y->data_h = mnist_train->labels;
+    CUDA_SAFE_CALL(cudaMemcpy(X->data_d, X->data_h, BATCH_SIZE*NUM_FEATURES*sizeof(data_t),
+                                                    cudaMemcpyHostToDevice));
+    CUDA_SAFE_CALL(cudaMemcpy(Y->data_d, Y->data_h, BATCH_SIZE*1*sizeof(data_t),
+                                                    cudaMemcpyHostToDevice));
+      for (epoch = 0; epoch < EPOCHS; epoch++) {
       data_t cost = (data_t)0;
       // for (batch = 0; batch < num_batches; batch++) {
-      //   Y = NeuralNetwork_ForwardPass(batch_data);
+      //   Y = NeuralNetwork_ForwardPass_global(batch_data);
       // }
+      pred = NeuralNetwork_ForwardPass_global(X, l, NUM_LAYERS);
+      accuracy(pred,Y);
     }
 
 

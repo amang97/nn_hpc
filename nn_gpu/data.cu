@@ -19,7 +19,7 @@ dataset * read_batch(int start, int batch_size, int w, int h, char *file) {
     mnist->images = images;
 
     // create label array
-    int *labels = (int *)calloc(batch_size, sizeof(int));
+    data_t *labels = (data_t *)calloc(batch_size, sizeof(data_t));
     if(!labels) return NULL;
     mnist->labels = labels;
 
