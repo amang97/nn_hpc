@@ -110,3 +110,12 @@ int MMM(matrix *A, matrix *B, matrix *out) {
     return 0;
 }
 
+/*
+__host__
+data_t * copy_matrix(data_t *A, data_t *B, int Bx, int By) {
+  int N =Bx*By;
+  data_t * cp = (data_t *)calloc(N,sizeof(data_t));
+  memcpy(cp, B, N*sizeof(data_t));
+  return cp;
+}
+*/
