@@ -9,10 +9,6 @@
 /******************************************************************************/
 /* prototypes and usage */
 /******************************************************************************/
-typedef struct NNLayer {
-    char *name;
-} nnlayer;
-
 typedef struct Layer {
     matrix *Z;  // output matrix
     matrix *W;  // weights of current layer (Weight weights)
@@ -152,19 +148,19 @@ void FFNNUb_unified(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr);
     Input: refrence to layer, A, W, b, Shape of W, initialization seed
     Output: W initialized randomly according to seed, bias col vector of 0
 */
-void layer_init(layer& l, int Ax, int Ay, int Wx, int Wy, int seed);
+extern "C" void layer_init(layer& l, int Ax, int Ay, int Wx, int Wy, int seed);
 
 /* Deleting a layer
     Input: Weight matrix W, bias vector b
     output: 0 if freeing memory success, -1 otherwise
 */
-int delete_layer(layer& l);
+extern "C" int delete_layer(layer& l);
 
 /* Forward pass call from host
 Input: reference to the layer
 Output: pointer to matrix Z = current_layer_W' * previous_layer_A + b
 */
-void forward_pas_global(layer& l, data_t *A, int Ax, int Ay);
+void forward_pass_global(layer& l, data_t *A, int Ax, int Ay);
 
 /* backward pass call from host */
-matrix * back_propagation(layer& l, data_t *dZ, data_t lr);
+void back_propagation_global(layer& l, data_t *dZ, data_t lr);

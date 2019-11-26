@@ -22,21 +22,21 @@ typedef struct NNLoss {
    Output: Cost    
 */
 __global__
-void BCELoss(data_t *cost, data_t *prediction, data_t *x, int Xdim);
+void BCELoss(data_t *cost, data_t *prediction, data_t *Y, int Ydim);
 
 /* Loss Gradient */
 /* Input: prediction, x, and Xdim (number of features)
    Output: gradient stored in dY
 */
 __global__
-void dBCELoss(data_t *dY, data_t *prediction, data_t *x, int Xdim);
+void dBCELoss(data_t *dY, data_t *prediction, data_t *Y, int Ydim);
 
 nnloss bce;
 bce.loss = BCELoss;
 bce.dloss = dBCELoss;
 
 typedef struct FFNN {
-    nnlayer *layers;
+    layer *layers;
     nnloss *bce;
     data_t learning_rate;
 } ffnn;
