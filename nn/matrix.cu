@@ -68,9 +68,9 @@ int matrix_free(Matrix *A) {
 __host__
 void print_matrix(Matrix *A) {
     int row, col;
-    for (row = 0; row < A->rows; row++) {
-        for (col = 0; col < A->cols; col++) {
-            printf("%lf",ELEMENT(A,row,col));
+    for (row = 1; row <= A->rows; row++) {
+        for (col = 1; col < =A->cols; col++) {
+            printf("%lf", ELEMENT(A, row, col));
         }
         printf("\n");
     }

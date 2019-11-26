@@ -17,3 +17,7 @@ typedef float data_t;
 #define IMAGE_H         28    // Image height
 #define NUM_OUTPUTS     10    // number of inference classes
 #define NUM_FEATURES    IMAGE_H * IMAGE_W
+
+/* Kernel Call parameters */
+#define BLOCK_SIZE_W    8
+#define BLOCK_SIZE_b    256

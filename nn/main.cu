@@ -20,14 +20,7 @@ int main() {
 
     // Set GPU Device
     CUDA_SAFE_CALL(cudaSetDevice(0));
-    
-    // initialize matrices
-    Matrix *W = matrix_init(5,5);
-    matrix_allocate(W,5,5);
-    printf("Weights initializedon device and host");
-    print_matrix(W);
-    int w = matrix_free(W);
-    if (!w) printf("Weights freed");
+
     // // Create a Feed Forward Neural Net (array of layers) and other parameters
     // layer l[NUM_LAYERS];
     // data_t lr = LEARNING_RATE;
