@@ -11,10 +11,12 @@ typedef float data_t;
 #define SEED            1527
 
 /* Data Parameters */
-#define NUM_INPUTS      100   // total data_points (must be multiple of batch_size)
-#define BATCH_SIZE      100   // num of input data_points
+#define BATCH_SIZE      3     // num of images fed to Feed Forward NN at once
+#define NUM_BATCHES_TR  4
+#define NUM_BATCHES_TT  3
 #define IMAGE_W         28    // Image width
 #define IMAGE_H         28    // Image height
+#define BUFFER_SIZE     5120
 #define NUM_OUTPUTS     10    // number of inference classes
 #define NUM_FEATURES    IMAGE_H * IMAGE_W
 

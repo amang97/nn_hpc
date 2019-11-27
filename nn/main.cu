@@ -9,19 +9,26 @@
 #include "nn_param.cuh"
 #include "linear_layer.cuh"
 #include "loss.cuh"
+#include "data.cuh"
 
 /* Main */
 int main() {
-    srand(time(NULL));
-
-    // // load training and testing data
-    // char * train = (char *)"./mnist/mnist_train.csv";
-    // char * test = (char *)"./mnist/mnist_test.csv";
-
-    // printf("\nTraining and Test data Loaded\n");
-
     // Set GPU Device
     CUDA_SAFE_CALL(cudaSetDevice(0));
+    
+    // load training and testing data
+    char * train = (char *)"./mnist/mnist_train.csv";
+    char * test = (char *)"./mnist/mnist_test.csv";
+    data_tr *mnist_tr = load_mnist_train(train);
+    data_tt *mnist_tt = load_mnist_train(test);
+    printf("\nTraining and Test data Loaded\n");
+    int i, j;
+    for (i = 0; i < NUM_BATCHES_TR; i++) {
+        print_matrix(get_batch_data_tr(mnist_tr, i));
+    }
+    for (j = 0; j < NUM_BATCHES_TT; j++) {
+        print_matrix(get_batch_data_tt(mnist_tt, j));
+    }
 
     // Create a Feed Forward Neural Net (array of layers) and other parameters
     layer l[NUM_LAYERS];
