@@ -7,15 +7,15 @@
 #include "matrix.cuh"
 #include "cuda_utils.cuh"
 #include "nn_param.cuh"
-#include "linear_layer.cuh"
-#include "loss.cuh"
-#include "data.cuh"
+// #include "linear_layer.cuh"
+// #include "loss.cuh"
+#include "load_data.cuh"
 
 /* Main */
 int main() {
     // Set GPU Device
     CUDA_SAFE_CALL(cudaSetDevice(0));
-    
+
     // load training and testing data
     char * train = (char *)"./mnist/mnist_train.csv";
     char * test = (char *)"./mnist/mnist_test.csv";
