@@ -7,12 +7,14 @@
 #include "matrix.cuh"
 #include "cuda_utils.cuh"
 #include "nn_param.cuh"
-// #include "linear_layer.cuh"
-// #include "loss.cuh"
+#include "linear_layer.cuh"
+#include "loss.cuh"
 #include "load_data.cuh"
 
 /* Main */
 int main() {
+    srand(time(0));
+
     // Set GPU Device
     CUDA_SAFE_CALL(cudaSetDevice(0));
 
@@ -31,6 +33,17 @@ int main() {
 
     
     /* Network Training on GPU */
+    // Matrix *Y;
+    int epoch, batch;
+    for (epoch = 0; epoch < EPOCHS; epoch++) {
+        // data_t loss = (data_t)0;
+        for (batch = 0; batch < NUM_BATCHES_TR - 1; batch++) {
+
+            // loss += BCEloss(Y, get_batch_label_tr(mnist_tr, batch));
+        }
+    }
+
+    /* Compute train accuracy */
 
     // // delete layers
     // int l1 = delete_layer(l[0]);

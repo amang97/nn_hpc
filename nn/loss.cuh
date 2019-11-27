@@ -12,7 +12,7 @@ void BinaryCrossEntropy(data_t *loss, data_t *Y_pred, data_t *Y_truth, int N) {
         // calculate partial cost (pc)
         data_t pc = (Y_truth[i]*((data_t)log(Y_pred[i]))) + 
             (((data_t)1 - Y_truth[i])*((data_t)log((data_t)1-Y_pred[i])));
-        atomicAdd(cost,-pc/N);
+        atomicAdd(loss,-pc/N);
     }
 }
 
@@ -25,7 +25,7 @@ void dBinaryCrossEntropy(data_t *dY, data_t *Y_pred, data_t *Y_truth, int N) {
     }
 }
 
-data_t loss(Matrix *Y_pred, Matrix *Y_truth) {
+data_t BCEloss(Matrix *Y_pred, Matrix *Y_truth) {
     int Ypx = Y_pred->rows, Ytx = Y_truth->rows;
     assert(Ypx == Ytx);
     data_t *BCEloss;
@@ -49,7 +49,7 @@ data_t loss(Matrix *Y_pred, Matrix *Y_truth) {
     return loss_val;
 }
 
-Matrix * dloss(Matrix *Y_pred, Matrix *Y_truth, Matrix *dY) {
+Matrix * dBCEloss(Matrix *Y_pred, Matrix *Y_truth, Matrix *dY) {
     int Ypx = Y_pred->rows, Ytx = Y_truth->rows;
     assert(Ypx == Ytx);
     dim3 block_b(BLOCK_SIZE_b);
@@ -63,9 +63,10 @@ Matrix * dloss(Matrix *Y_pred, Matrix *Y_truth, Matrix *dY) {
 
 data_t accuracy(const Matrix * Y_pred, const Matrix * Y_truth) {
     int Ypx = Y_pred->rows;
-    int acc = (data_t)0;
+   //int acc = (data_t)0;
     int i;
     for (i = 0; i < Ypx; i++) {
         // Depends on data
     }
+    return 0.0;
 }

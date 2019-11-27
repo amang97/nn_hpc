@@ -14,8 +14,6 @@
 /* Implementations */
 /******************************************************************************/
 
-srand(time(NULL));
-
 data_t rand_weight() {
     return ((data_t)rand())/((data_t)RAND_MAX);
 }
@@ -34,7 +32,7 @@ void weight_init(Linear_Layer *ll) {
 void bias_init(Linear_Layer *ll) {
     int row;
     for (row = 1; row <= ll->b->rows; row++) {
-        ELEMENT(b, row, 1) = (data_t)0;
+        ELEMENT(ll->b, row, 1) = (data_t)0;
     }
     // copy host b to device
     copy_matrix_H2D(ll->b);
@@ -50,7 +48,7 @@ void ll_init(Linear_Layer *ll, int Wx, int Wy, int seed) {
     matrix_allocate_cuda(ll->W);
     matrix_allocate_host(ll->W);
     matrix_allocate_cuda(ll->b);
-    matrix_allocate_host(ll->b)
+    matrix_allocate_host(ll->b);
     
     // initialize W and b data and copy data H2D
     weight_init(ll); // initialized with random values
@@ -58,9 +56,10 @@ void ll_init(Linear_Layer *ll, int Wx, int Wy, int seed) {
 }
 
 int ll_free(Linear_Layer *ll) {
-    int freez = freew = freea = freeb = freeda = -1;
+    int freez, freew, freea, freeb, freeda;
+    freez = freew = freea = freeb = freeda = -1;
     if (ll->Z) freez = matrix_free(ll->Z);
-    if (ll->W) freew = matrix_free(ll->w);
+    if (ll->W) freew = matrix_free(ll->W);
     if (ll->A) freea = matrix_free(ll->A);
     if (ll->b) freeb = matrix_free(ll->b);
     if (ll->dA) freeda = matrix_free(ll->dA);
@@ -145,7 +144,7 @@ Matrix * ll_forward_pass_global(Linear_Layer * ll, Matrix *A) {
     assert(ll->W->rows == A->cols); ll->A = A;
     
     // Allocate Z if not allocated yet
-    matrix_allocate(ll->Z, A->rows, W->cols);
+    matrix_allocate(ll->Z, A->rows, ll->W->cols);
 
     // call forward pass kernel
     dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
@@ -199,18 +198,18 @@ Matrix * ll_back_propagation_global(Linear_Layer * ll, Matrix *dZ, data_t lr) {
     return ll->dA;
 }
 
-Matrix getW(Linear_Layer *ll) const {
+Matrix getW(Linear_Layer *ll) {
     return *(ll->W);
 }
 
-Matrix getb(Linear_Layer *ll) const {
+Matrix getb(Linear_Layer *ll) {
     return *(ll->b);
 }
 
-int getWx(Linear_Layer *ll) const {
+int getWx(Linear_Layer *ll) {
     return ll->W->rows;
 }
 
-int getWy(Linear_Layer *ll) const {
+int getWy(Linear_Layer *ll) {
     return ll->W->cols;
 }
