@@ -20,19 +20,12 @@ int main() {
     char * train = (char *)"./mnist/mnist_train.csv";
     char * test = (char *)"./mnist/mnist_test.csv";
     data_tr *mnist_tr = load_mnist_train(train);
-    data_tt *mnist_tt = load_mnist_train(test);
+    data_tt *mnist_tt = load_mnist_test(test);
     printf("\nTraining and Test data Loaded\n");
-    int i, j;
-    for (i = 0; i < NUM_BATCHES_TR; i++) {
-        print_matrix(get_batch_data_tr(mnist_tr, i));
-    }
-    for (j = 0; j < NUM_BATCHES_TT; j++) {
-        print_matrix(get_batch_data_tt(mnist_tt, j));
-    }
 
     // Create a Feed Forward Neural Net (array of layers) and other parameters
-    layer l[NUM_LAYERS];
-    data_t lr = LEARNING_RATE;
+    // layer l[NUM_LAYERS];
+    // data_t lr = LEARNING_RATE;
 
     // initialize layers
 

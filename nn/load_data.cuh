@@ -13,11 +13,11 @@ typedef struct DataTT {
     Matrix *label[NUM_BATCHES_TT];
 } data_tt;
 
-data_tr *mnist_tr load_mnist_train(char *file);
-data_tt *mnist_tt load_mnist_test(char *file);
+data_tr *load_mnist_train(char *file);
+data_tt *load_mnist_test(char *file);
 
 Matrix *get_batch_data_tr(data_tr *mnist_tr, int batch_id);
 Matrix *get_batch_data_tt(data_tt *mnist_tt, int batch_id);
 
-Matrix *gat_batch_label_tr(data_tr *mnist_tr, int batch_id);
-Matrix *gat_batch_label_tt(data_tt *mnist_tt, int batch_id);
+Matrix *get_batch_label_tr(data_tr *mnist_tr, int batch_id);
+Matrix *get_batch_label_tt(data_tt *mnist_tt, int batch_id);
