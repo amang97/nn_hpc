@@ -10,6 +10,7 @@
 #include "linear_layer.cuh"
 #include "loss.cuh"
 #include "load_data.cuh"
+#include "neural_network.cuh"
 
 /* Main */
 int main() {
@@ -26,29 +27,36 @@ int main() {
     printf("\nTraining and Test data Loaded\n");
 
     // Create a Feed Forward Neural Net (array of layers) and other parameters
-    // layer l[NUM_LAYERS];
-    // data_t lr = LEARNING_RATE;
+    Neural_Network *nn = neural_net_init();
+    printf("Neural Network layers allocated\n");
 
-    // initialize layers
 
+    // initialize network layer weights and biases
+    add_layer(nn, 0, (char *)"Input Layer", 3, 784, 784, 60, 1234);
+    add_layer(nn, 1, (char *)"Hidden Layer", 784, 60, 60, 10, 1234);
+    //add_layer(nn, 2, (char *)"Output Layer", 10, 1, 1234);
     
     /* Network Training on GPU */
-    // Matrix *Y;
+    Matrix *Y = matrix_init(BATCH_SIZE, 1);
+    matrix_allocate(Y, BATCH_SIZE, 1);
     int epoch, batch;
     for (epoch = 0; epoch < EPOCHS; epoch++) {
         // data_t loss = (data_t)0;
+        printf("epoch: %d\n", epoch);
         for (batch = 0; batch < NUM_BATCHES_TR - 1; batch++) {
-
+            printf("batch: %d\n", batch);
+            Matrix *X = get_batch_data_tr(mnist_tr, batch);
+            printf("Xsize: %d\n", X->rows*X->cols);
+            //print_matrix(X);
+            Y = nn_forward_pass_global(nn, X);
             // loss += BCEloss(Y, get_batch_label_tr(mnist_tr, batch));
         }
     }
 
+    
     /* Compute train accuracy */
 
     // // delete layers
-    // int l1 = delete_layer(l[0]);
-    // int l2 = delete_layer(l[1]);
-    // int l3 = delete_layer(l[2]);
     // if (!(l1) || !(l2) || !(l3)) printf("Neural Network layers destroyed\n");
     // else printf("OOpS!, Neural Net destruction went wrong.\n");
     

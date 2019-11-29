@@ -34,6 +34,9 @@ __host__
 void matrix_allocate(Matrix *A, int rows, int cols);
 
 __host__
+Matrix *copy_matrix(Matrix *A);
+
+__host__
 int matrix_free(Matrix *A);
 
 __host__

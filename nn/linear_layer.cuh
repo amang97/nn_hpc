@@ -26,7 +26,7 @@ void weight_init(Linear_Layer *ll);
 
 void bias_init(Linear_Layer *ll);
 
-void ll_init(Linear_Layer *ll, int Wx, int Wy, int seed);
+void ll_init(Linear_Layer *ll, int Ax, int Ay, int Wx, int Wy, int seed);
 
 int ll_free(Linear_Layer *ll);
 

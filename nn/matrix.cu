@@ -33,9 +33,19 @@ void matrix_allocate_host(Matrix *A) {
     if (!A->host_assigned) {
         data_t *data_h = (data_t *)calloc(A->rows*A->cols,sizeof(data_t));
         if (!data_h) {printf("Unable to allocate matrix\n"); exit(-1);}
+        printf("Hi\n");
         A->data_h = data_h;
         A->host_assigned = true;
     }
+}
+
+__host__
+Matrix *copy_matrix(Matrix *X) {
+    Matrix *Z = matrix_init(X->rows, X->cols);
+    matrix_allocate(Z, X->rows, X->cols);
+    memcpy(Z->data_h, X->data_h, X->rows*X->cols*sizeof(data_t));
+    copy_matrix_H2D(Z);
+    return Z;
 }
 
 __host__
@@ -52,8 +62,8 @@ void matrix_allocate(Matrix *A, int rows, int cols) {
     if (!A->device_assigned && !A->host_assigned) {
         A->rows = rows;
         A->cols = cols;
+        matrix_allocate_host(A);
         matrix_allocate_cuda(A);
-        matrix_allocate_host(A);   
     }
 }
 

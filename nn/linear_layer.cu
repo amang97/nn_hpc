@@ -10,6 +10,7 @@
 #include "matrix.cuh"
 #include "cuda_utils.cuh"
 #include "linear_layer.cuh"
+#include "cuPrintf.cuh"
 /******************************************************************************/
 /* Implementations */
 /******************************************************************************/
@@ -38,11 +39,14 @@ void bias_init(Linear_Layer *ll) {
     copy_matrix_H2D(ll->b);
 }
 
-void ll_init(Linear_Layer *ll, int Wx, int Wy, int seed) {
+void ll_init(Linear_Layer *ll, int Ax, int Ay, int Wx, int Wy, int seed) {
     // initialize W and b
     ll->seed = seed;
+    ll->Z = matrix_init(Ax, Wy);
     ll->W = matrix_init(Wx, Wy);
+    ll->A = matrix_init(Ax, Ay);
     ll->b = matrix_init(Wy, 1);
+    ll->dA = matrix_init(Ax, Ay);
 
     // Allocate W and b on host and device
     matrix_allocate_cuda(ll->W);
@@ -56,6 +60,7 @@ void ll_init(Linear_Layer *ll, int Wx, int Wy, int seed) {
 }
 
 int ll_free(Linear_Layer *ll) {
+    if (!ll) { printf("Couldnt find the layer pointer\n"); return -1; }
     int freez, freew, freea, freeb, freeda;
     freez = freew = freea = freeb = freeda = -1;
     if (ll->Z) freez = matrix_free(ll->Z);
@@ -63,8 +68,9 @@ int ll_free(Linear_Layer *ll) {
     if (ll->A) freea = matrix_free(ll->A);
     if (ll->b) freeb = matrix_free(ll->b);
     if (ll->dA) freeda = matrix_free(ll->dA);
+    printf("%d, %d, %d, %d, %d", freez, freew, freea, freeb, freeda);
     if (freez || freew || freea || freeb || freeda) return -1;
-    if (!ll) return -1;
+    if (!ll) {printf("No layer found to free\n"); return -1;}
     free(ll);
     return 0;
 }
@@ -84,6 +90,7 @@ void FFNNFP_global(data_t *Z, data_t *W, data_t *A, data_t *b, int Wx, int Wy,
             val += W[row*Wx+k] * A[k*Ax+col];
         }
         Z[row*Zx+col] = val + b[row];
+        //cuPrintf("%d\n", val + b[row]);
     }
 }
 
@@ -142,10 +149,12 @@ void FFNNUb_global(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr) {
 Matrix * ll_forward_pass_global(Linear_Layer * ll, Matrix *A) {
     // copy A from Host to Device
     assert(ll->W->rows == A->cols); ll->A = A;
-    
-    // Allocate Z if not allocated yet
-    matrix_allocate(ll->Z, A->rows, ll->W->cols);
 
+    // Allocate Z if not allocated yet
+    printf("Z ka Size: %d, %d\n", A->rows, ll->W->cols);
+    //Matrix *Z = matrix_init(A->rows, ll->W->cols);
+    matrix_allocate(ll->Z, A->rows, ll->W->cols);
+    print_matrix(ll->Z);
     // call forward pass kernel
     dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
     dim3 grid_W((ll->Z->rows+block_W.x-1)/block_W.x,
@@ -156,6 +165,9 @@ Matrix * ll_forward_pass_global(Linear_Layer * ll, Matrix *A) {
                                         ll->b->data_d,
                                         ll->W->rows, ll->W->cols,
                                         ll->A->rows, ll->A->cols);
+    copy_matrix_D2H(ll->Z);
+    printf("ZSize: %d\n", ll->Z->rows*ll->Z->cols);
+    print_matrix(ll->Z);
     return ll->Z;
 }
 
