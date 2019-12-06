@@ -3,7 +3,7 @@
  Project - Optimized Neural Network with Relu activation
 */
 
-// gcc nn_cpu.c -o nn
+// gcc -lm nn_cpu.c -o nn
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,11 +16,11 @@
 #define GIG             1000000000
 #define THREADS         1
 #define INPUTSIZE       784
-#define NUMHIDDENLAYERS 1
+#define NUMHIDDENLAYERS 3
 #define NUMOUTPUTS      10
 #define BATCH_SIZE      4
 #define EPOCHS          1
-#define NUMINPUTSTRAIN  60
+#define NUMINPUTSTRAIN  60000
 #define NUMINPUTSTEST   10000
 #define BUFFER_SIZE     5120
 //static const int numTrainingSets = 4;
@@ -170,9 +170,11 @@ int main(int argc, char *argv[])
     float testing_inputs[NUMINPUTSTEST][INPUTSIZE];
     int testing_labels[NUMINPUTSTEST];
     float * hiddenLayer_output[NUMHIDDENLAYERS];
-    float outputLayer_output[NUMOUTPUTS];
     float hiddenLayerBiases[NUMHIDDENLAYERS];
+    float * hiddenLayer_gradient[NUMHIDDENLAYERS];
+    float outputLayer_output[NUMOUTPUTS];
     float outputLayerBias;
+    float outputLayer_gradient[NUMOUTPUTS];
     // For weights, the row number is the output node number
     // The column number if the input node number
     // so it is in the format of (Ax = b)
@@ -248,6 +250,7 @@ int main(int argc, char *argv[])
     for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
       hiddenLayer_output[i] = (float*)calloc(hidden_Layer_node_count[i],sizeof(float));
+      hiddenLayer_gradient[i] = (float*)calloc(hidden_Layer_node_count[i],sizeof(float));
     }
     printf("Allocated memory for Neural Network Nodes\n");
 
@@ -345,14 +348,19 @@ int main(int argc, char *argv[])
             mvmr(hiddenWeights[j], hiddenLayer_output[j-1], hiddenLayer_output[j],hidden_Layer_node_count[j],hidden_Layer_node_count[j-1],hiddenLayerBiases[j]);
           }
         }
-        mvmr(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
+        mvms(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
+        //for(j = 0; j < NUMOUTPUTS; j++)
+        //{
+        //  printf("%f,",outputLayer_output[j]);
+        //}
+        //printf("\n");
         int guess_label = result_calculator(outputLayer_output, NUMOUTPUTS);
         //printf("%d,", guess_label);
-        for(j = 0; j < NUMOUTPUTS; j++)
-        {
-          printf("%f,", outputLayer_output[j]);
-        }
-        printf("\n");
+        //for(j = 0; j < NUMOUTPUTS; j++)
+        //{
+        //  printf("%f,", outputLayer_output[j]);
+        //}
+        //printf("\n");
         if(guess_label == training_labels[i])
         {
           correct_answers++;
