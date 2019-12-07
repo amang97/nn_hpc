@@ -23,6 +23,7 @@
 #define NUMINPUTSTRAIN  60000
 #define NUMINPUTSTEST   10000
 #define BUFFER_SIZE     5120
+#define LEARN_RATE      1
 //static const int numTrainingSets = 4;
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Relu(x)
@@ -145,6 +146,20 @@ void mvms(float* A, float * x, float * result, int num_row, int num_col, float b
   //}
   //printf("\n");
 }
+
+void mvm(float* A, float * x, float * result, int num_row, int num_col)
+{
+  int i,j;
+  for(i = 0; i < num_row; i++)
+  {
+    float sum = 0;
+    for(j = 0; j < num_col; j++)
+    {
+      sum = sum + (A[(i*num_col) + j] * x[j]);
+    }
+    result[i] = sum;
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 // Main Function
@@ -181,7 +196,9 @@ int main(int argc, char *argv[])
     // here x is the values in the input layer
     // here y is the result in the output layer
     float * hiddenWeights[NUMHIDDENLAYERS];
+    float * hiddenWeights_gradient[NUMHIDDENLAYERS];
     float * outputWeights;
+    float * outputWeights_gradient;
 
     // Get Number of nodes in each Hidden Layer ///////////////////////////////
     for(i = 0; i < NUMHIDDENLAYERS; i++)
@@ -224,6 +241,7 @@ int main(int argc, char *argv[])
 
     // Initialize output weights////////////////////////////////////////////////
     outputWeights = (float*)calloc(NUMOUTPUTS*hidden_Layer_node_count[NUMHIDDENLAYERS-1], sizeof(float));
+    outputWeights_gradient = (float*)calloc(NUMOUTPUTS*hidden_Layer_node_count[NUMHIDDENLAYERS-1], sizeof(float));
     if(outputWeights == NULL)
     {
       printf("Memory not allocated\n");
@@ -348,7 +366,7 @@ int main(int argc, char *argv[])
             mvmr(hiddenWeights[j], hiddenLayer_output[j-1], hiddenLayer_output[j],hidden_Layer_node_count[j],hidden_Layer_node_count[j-1],hiddenLayerBiases[j]);
           }
         }
-        mvms(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
+        mvmr(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
         //for(j = 0; j < NUMOUTPUTS; j++)
         //{
         //  printf("%f,",outputLayer_output[j]);
@@ -365,6 +383,31 @@ int main(int argc, char *argv[])
         {
           correct_answers++;
         }
+
+        // Calculates Deltas at Output Layer using one-hot representation
+        for(j = 0; j < NUMOUTPUTS; j++)
+        {
+          if((j + 1) == training_labels[i])
+          {
+            //outputLayer_gradient[j] = (1 - outputLayer_output[j]) * dSigmoid(outputLayer_output[j]);
+            outputLayer_gradient[j] = 0;
+          }
+          else
+          {
+            outputLayer_gradient[j] = (0 - outputLayer_output[j]) * drelu(outputLayer_output[j]);
+          }
+        }
+
+        // Update Output Bias
+        float sum = 0;
+        for(j = 0; j < NUMOUTPUTS; j++)
+        {
+          sum = sum + outputLayer_gradient[j];
+        }
+        sum = sum / NUMOUTPUTS;
+
+        // Update Output Weight
+
       }
       //printf("\n\n\n");
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
