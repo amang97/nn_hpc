@@ -33,7 +33,6 @@ void matrix_allocate_host(Matrix *A) {
     if (!A->host_assigned) {
         data_t *data_h = (data_t *)calloc(A->rows*A->cols,sizeof(data_t));
         if (!data_h) {printf("Unable to allocate matrix\n"); exit(-1);}
-        printf("Hi\n");
         A->data_h = data_h;
         A->host_assigned = true;
     }
@@ -75,12 +74,22 @@ int matrix_free(Matrix *A) {
     return 0;
 }
 
-__host__
 void print_matrix(Matrix *A) {
     int row, col;
     for (row = 1; row <= A->rows; row++) {
         for (col = 1; col <= A->cols; col++) {
-            printf("%lf,", ELEMENT(A, row, col));
+            printf("%lf,", ELEMENT_H(A, row, col));
+        }
+        printf("\n");
+    }
+}
+
+void print_matrix_d(Matrix *A) {
+    int row, col;
+    for (row = 1; row <= A->rows; row++) {
+        for (col = 1; col <= A->cols; col++) {
+            printf("lol\n");
+            printf("%lf,", A->data_d[col-1*A->rows + (row-1)]);//ELEMENT_D(A, row, col));
         }
         printf("\n");
     }

@@ -23,7 +23,7 @@ void weight_init(Linear_Layer *ll) {
     int row, col;
     for (row = 1; row <= ll->W->rows; row++) {
         for (col = 1; col <= ll->W->cols; col++) {
-            ELEMENT(ll->W, row, col) = rand_weight();
+            ELEMENT_H(ll->W, row, col) = rand_weight();
         }
     }
     // copy host W to device
@@ -33,15 +33,14 @@ void weight_init(Linear_Layer *ll) {
 void bias_init(Linear_Layer *ll) {
     int row;
     for (row = 1; row <= ll->b->rows; row++) {
-        ELEMENT(ll->b, row, 1) = (data_t)0;
+        ELEMENT_H(ll->b, row, 1) = (data_t)0;
     }
     // copy host b to device
     copy_matrix_H2D(ll->b);
 }
 
-void ll_init(Linear_Layer *ll, int Ax, int Ay, int Wx, int Wy, int seed) {
+void ll_init(Linear_Layer *ll, int Ax, int Ay, int Wx, int Wy) {
     // initialize W and b
-    ll->seed = seed;
     ll->Z = matrix_init(Ax, Wy);
     ll->W = matrix_init(Wx, Wy);
     ll->A = matrix_init(Ax, Ay);
@@ -53,7 +52,7 @@ void ll_init(Linear_Layer *ll, int Ax, int Ay, int Wx, int Wy, int seed) {
     matrix_allocate_host(ll->W);
     matrix_allocate_cuda(ll->b);
     matrix_allocate_host(ll->b);
-    
+
     // initialize W and b data and copy data H2D
     weight_init(ll); // initialized with random values
     bias_init(ll);  // initialized with 0
@@ -70,7 +69,6 @@ int ll_free(Linear_Layer *ll) {
     if (ll->dA) freeda = matrix_free(ll->dA);
     printf("%d, %d, %d, %d, %d", freez, freew, freea, freeb, freeda);
     if (freez || freew || freea || freeb || freeda) return -1;
-    if (!ll) {printf("No layer found to free\n"); return -1;}
     free(ll);
     return 0;
 }
@@ -151,10 +149,11 @@ Matrix * ll_forward_pass_global(Linear_Layer * ll, Matrix *A) {
     assert(ll->W->rows == A->cols); ll->A = A;
 
     // Allocate Z if not allocated yet
-    printf("Z ka Size: %d, %d\n", A->rows, ll->W->cols);
-    //Matrix *Z = matrix_init(A->rows, ll->W->cols);
     matrix_allocate(ll->Z, A->rows, ll->W->cols);
-    print_matrix(ll->Z);
+    // copy_matrix_D2H(ll->A);
+    // printf("\n\nLinear Layer Input\n");
+    // print_matrix(ll->A);
+    // printf("\n\n");
     // call forward pass kernel
     dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
     dim3 grid_W((ll->Z->rows+block_W.x-1)/block_W.x,
@@ -166,8 +165,10 @@ Matrix * ll_forward_pass_global(Linear_Layer * ll, Matrix *A) {
                                         ll->W->rows, ll->W->cols,
                                         ll->A->rows, ll->A->cols);
     copy_matrix_D2H(ll->Z);
-    printf("ZSize: %d\n", ll->Z->rows*ll->Z->cols);
+    //printf("ZSize: %d\n", ll->Z->rows*ll->Z->cols);
+    printf("\n\nLinear Layer Output\n");
     print_matrix(ll->Z);
+    printf("\n\n");
     return ll->Z;
 }
 
@@ -181,6 +182,7 @@ Matrix * ll_back_propagation_global(Linear_Layer * ll, Matrix *dZ, data_t lr) {
     // Allocate dA if not already
     matrix_allocate(ll->dA, Ax, Ay);
 
+    // call forward pass kernel
     // Compute back-propagation error using dZ
     dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
     dim3 grid_W((Ax+block_W.x-1)/block_W.x, (Ay+block_W.y-1)/block_W.y);
@@ -207,6 +209,16 @@ Matrix * ll_back_propagation_global(Linear_Layer * ll, Matrix *dZ, data_t lr) {
                                         Ax, Ay,
                                         lr);
     
+    copy_matrix_D2H(ll->dA);
+    // copy_matrix_D2H(ll->W);
+    copy_matrix_D2H(ll->b);
+
+    printf("\n\nLinear Layer Backprop\n");
+    print_matrix(ll->dA);
+    printf("\n\n");
+    printf("\n\nbias\n");
+    print_matrix(ll->b);
+    printf("\n\n");
     return ll->dA;
 }
 

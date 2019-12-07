@@ -3,11 +3,31 @@
 /* Neural Network Activations library for GPU in C                            */
 #pragma once    /* file guard */
 /******************************************************************************/
-/* Libraries */
-#include "nnlayer.cuh"
+/* Libraries */ 
+#include "matrix.cuh"
+#include "linear_layer.cuh"
+#include <stdbool.h>
 /******************************************************************************/
 /* prototypes and usage */
 /******************************************************************************/
+typedef struct Relu_Activation {
+    bool relu_activation;
+    Matrix * A;
+    Matrix * Z;
+    Matrix * dZ;
+} Relu;
+
+typedef struct Sigmoid_Activation {
+    bool sigmoid_activation;
+    Matrix * A;
+    Matrix * Z;
+    Matrix * dZ;
+} Sigmoid;
+
+typedef struct Activation_Layer {
+    Relu *r;
+    Sigmoid *s;
+} Activation_Layer;
 
 /* Activations */
 /******************************************************************************/
@@ -17,59 +37,37 @@ data_t relu(data_t x, data_t y);
 __device__
 data_t sigmoid(data_t x);
 
+Relu * relu_activate(Linear_Layer *ll);
+Sigmoid * sigmoid_activate(Linear_Layer *ll);
 
-/* RELU Activation Forward Pass*/
+/* relu Activation Forward Pass*/
 /******************************************************************************/
 __global__
-void RELU_forward_global(data_t *A, data_t *Z, int Zx, int Zy);
-
-__global__
-void RELU_forward_shared(data_t *A, data_t *Z, int Zx, int Zy);
-
-__global__
-void RELU_forward_unified(data_t *A, data_t *Z, int Zx, int Zy);
+void relu_forward_global(data_t *A, data_t *Z, int Zx, int Zy);
 
 /* Sigmoid Activation Forward Pass*/
 /******************************************************************************/
 __global__
-void Sigmoid_Forward_global(data_t *A, data_t *Z, int Zx, int Zy);
+void sigmoid_Forward_global(data_t *A, data_t *Z, int Zx, int Zy);
 
-__global__
-void Sigmoid_Forward_shared(data_t *A, data_t *Z, int Zx, int Zy);
-
-__global__
-void Sigmoid_Forward_unified(data_t *A, data_t *Z, int Zx, int Zy);
-
-/* RELU Activation Backward Pass*/
+/* relu Activation Backward Pass*/
 /******************************************************************************/
 __global__
-void RELU_backward_global(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
+void relu_backward_global(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
 
-__global__
-void RELU_backward_shared(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
-
-__global__
-void RELU_backward_unified(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
-
-/* Sigmoid Activation Backward Pass*/
+/* sigmoid Activation Backward Pass*/
 /******************************************************************************/
 __global__
-void Sigmoid_backward_global(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
+void sigmoid_backward_global(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
 
-__global__
-void Sigmoid_backward_shared(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
+/* Host calls to relu */
+Matrix * relu_forward_pass_global(Relu *r, Matrix * Z);
 
-__global__
-void Sigmoid_backward_unified(data_t *dZ, data_t *dA, data_t *Z, int Zx, int Zy);
+/* Host calls to sigmoid */
+Matrix * relu_back_propagation_global(Relu *r, Matrix *dA, data_t lr);
 
-/* Host calls to RELU */
-void RELU_forward(layer& l);
+/* Host calls to GPU for sigmoid for Forward pass */
+Matrix * sigmoid_forward_pass_global(Sigmoid *s, Matrix *Z);
 
-/* Host calls to Sigmoid */
-void RELU_back_propagation(layer& l, data_t lr);
-
-/* Host calls to GPU for Sigmoid for Forward pass */
-void Sigmoid_forward(layer& l);
-
-/* Host calls to GPU for Sigmoid for backprop*/
-void Sigmoid_back_propagation(layer& l, data_t lr);
+/* Host calls to GPU for sigmoid for backprop*/
+Matrix * sigmoid_back_propagation_global(Sigmoid *s, Matrix *dA, data_t lr);

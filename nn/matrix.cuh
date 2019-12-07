@@ -7,7 +7,9 @@
 #include <stdbool.h>
 
 /* Accessing matrix element from device data */
-#define ELEMENT(mat, row, col) mat->data_h[(col-1)*(mat->rows) + (row-1)]
+#define ELEMENT_H(mat, row, col) mat->data_h[(col-1)*(mat->rows) + (row-1)]
+#define ELEMENT_D(mat, row, col) mat->data_d[(col-1)*(mat->rows) + (row-1)]
+
 /******************************************************************************/
 /* Data Structures */
 /******************************************************************************/
@@ -39,5 +41,6 @@ Matrix *copy_matrix(Matrix *A);
 __host__
 int matrix_free(Matrix *A);
 
-__host__
 void print_matrix(Matrix *A);
+
+void print_matrix_d(Matrix *A);

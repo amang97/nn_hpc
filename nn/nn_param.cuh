@@ -6,7 +6,7 @@ typedef float data_t;
 
 /* Neural Net Parameters */
 #define NUM_LAYERS      1 + 1 //+ 1
-#define EPOCHS          2
+#define EPOCHS          1
 #define LEARNING_RATE   0.01
 #define SEED            1527
 
