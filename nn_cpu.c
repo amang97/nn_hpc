@@ -16,22 +16,30 @@
 #define GIG             1000000000
 #define THREADS         1
 #define INPUTSIZE       784
-#define NUMHIDDENLAYERS 3
+#define NUMHIDDENLAYERS 1
 #define NUMOUTPUTS      10
 #define BATCH_SIZE      4
-#define EPOCHS          1
-#define NUMINPUTSTRAIN  60000
+#define EPOCHS          100
+#define NUMINPUTSTRAIN  10000
 #define NUMINPUTSTEST   10000
 #define BUFFER_SIZE     5120
-#define LEARN_RATE      1
+#define LEARN_RATE      0.0001
 //static const int numTrainingSets = 4;
+
+///////////////////////////////////////////////////////////////////////////////
+// Initializer for the weights and the biases for the Neural Network
+float init_weight()
+{
+  return ((float)rand())/((float)RAND_MAX);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Calculates Relu(x)
 float relu(float x)
 {
   if(x < 0)
   {
-    return 0;
+    return (0.01 * x);
   }
   else
   {
@@ -42,9 +50,9 @@ float relu(float x)
 // Calculates Derivative of Relu(x)
 float drelu(float x)
 {
-  if(x <= 0)
+  if(x < 0)
   {
-    return 0;
+    return (0.01);
   }
   else
   {
@@ -94,12 +102,6 @@ struct timespec diff(struct timespec start, struct timespec end)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Initializer for the weights and the biases for the Neural Network
-float init_weight()
-{
-  return ((float)rand())/((float)RAND_MAX);
-}
-///////////////////////////////////////////////////////////////////////////////
 // Matrix Vector multiplication
 void mvmr(float* A, float * x, float * result, int num_row, int num_col, float bias)
 {
@@ -132,19 +134,10 @@ void mvms(float* A, float * x, float * result, int num_row, int num_col, float b
     float sum = 0;
     for(j = 0; j < num_col; j++)
     {
-      //printf("%0.2f,",A[(i*num_col) + j]);
       sum = sum + (A[(i*num_col) + j] * x[j]);
     }
     result[i] = Sigmoid(sum + bias);
-    //printf("\n%f,",sum);
-    //result[i] = sum;
   }
-  //printf("\nresult:\n");
-  //for(i = 0; i < num_col; i++)
-  //{
-  //  printf("%f,",x[i]);
-  //}
-  //printf("\n");
 }
 
 void mvm(float* A, float * x, float * result, int num_row, int num_col)
@@ -158,6 +151,32 @@ void mvm(float* A, float * x, float * result, int num_row, int num_col)
       sum = sum + (A[(i*num_col) + j] * x[j]);
     }
     result[i] = sum;
+  }
+}
+
+// a * b = c
+void outer_p(float * a, float * b, float * result, int num_row, int num_col)
+{
+  int i,j;
+  for(i = 0; i < num_row; i++)
+  {
+    for(j = 0; j < num_col; j++)
+    {
+      // optimize the indexing
+      result[(i * num_col) + j] = a[i] * b[j];
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Array-Array Operation
+void add_weights_l(float * a, float * b, int arr_len)
+{
+  // optimize indexing
+  int i;
+  for(i = 0; i < arr_len; i++)
+  {
+    a[i] -= (b[i] * LEARN_RATE);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -242,7 +261,7 @@ int main(int argc, char *argv[])
     // Initialize output weights////////////////////////////////////////////////
     outputWeights = (float*)calloc(NUMOUTPUTS*hidden_Layer_node_count[NUMHIDDENLAYERS-1], sizeof(float));
     outputWeights_gradient = (float*)calloc(NUMOUTPUTS*hidden_Layer_node_count[NUMHIDDENLAYERS-1], sizeof(float));
-    if(outputWeights == NULL)
+    if((outputWeights == NULL) || (outputWeights_gradient == NULL))
     {
       printf("Memory not allocated\n");
       return 0;
@@ -367,34 +386,25 @@ int main(int argc, char *argv[])
           }
         }
         mvmr(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
-        //for(j = 0; j < NUMOUTPUTS; j++)
-        //{
-        //  printf("%f,",outputLayer_output[j]);
-        //}
-        //printf("\n");
+
         int guess_label = result_calculator(outputLayer_output, NUMOUTPUTS);
-        //printf("%d,", guess_label);
-        //for(j = 0; j < NUMOUTPUTS; j++)
-        //{
-        //  printf("%f,", outputLayer_output[j]);
-        //}
-        //printf("\n");
         if(guess_label == training_labels[i])
         {
           correct_answers++;
         }
 
+        // Back Propagation Algorithm /////////////////////////////////////////
         // Calculates Deltas at Output Layer using one-hot representation
         for(j = 0; j < NUMOUTPUTS; j++)
         {
           if((j + 1) == training_labels[i])
           {
-            //outputLayer_gradient[j] = (1 - outputLayer_output[j]) * dSigmoid(outputLayer_output[j]);
+            //outputLayer_gradient[j] = (10000 - outputLayer_output[j]) * dSigmoid(outputLayer_output[j]);
             outputLayer_gradient[j] = 0;
           }
           else
           {
-            outputLayer_gradient[j] = (0 - outputLayer_output[j]) * drelu(outputLayer_output[j]);
+            outputLayer_gradient[j] = (outputLayer_output[j]) * drelu(outputLayer_output[j]);
           }
         }
 
@@ -404,9 +414,12 @@ int main(int argc, char *argv[])
         {
           sum = sum + outputLayer_gradient[j];
         }
-        sum = sum / NUMOUTPUTS;
+        sum = sum / ((float)(NUMOUTPUTS));
+        outputLayerBias = outputLayerBias - (sum * LEARN_RATE);
 
         // Update Output Weight
+        outer_p(outputLayer_gradient,hiddenLayer_output[NUMHIDDENLAYERS-1],outputWeights_gradient,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1]);
+        add_weights_l(outputWeights,outputWeights_gradient,NUMOUTPUTS * hidden_Layer_node_count[NUMHIDDENLAYERS-1]);
 
       }
       //printf("\n\n\n");
@@ -414,6 +427,12 @@ int main(int argc, char *argv[])
       time_stamp = diff(time1,time2);
       printf("Feed Forwarded for Epoch %d\n",iteration);
       printf("Time Taken: %0.2f seconds\nAccuracy: %0.3f\n",(((float)(GIG * time_stamp.tv_sec + time_stamp.tv_nsec)) / GIG), (((float)correct_answers) * 100 / NUMINPUTSTRAIN));
+      printf("Bias: %f\n\n", outputLayerBias);
+      //for(i = 0; i < (NUMOUTPUTS * hidden_Layer_node_count[NUMHIDDENLAYERS-1]); i++)
+      //{
+      //  printf("%f,",outputWeights[i]);
+      //}
+      //printf("\n\n");
     }
 
 
@@ -423,6 +442,7 @@ int main(int argc, char *argv[])
       free(hiddenWeights[i]);
     }
     free(outputWeights);
+    free(outputWeights_gradient);
 
     printf("Freed Weights\n");
     // Free Neural Network Nodes //////////////////////////////////////////////
