@@ -19,11 +19,12 @@ __global__
 void BinaryCrossEntropy(data_t *loss, data_t *Y_pred, data_t *Y_truth, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
-        // calculate partial cost (pc)
-        data_t pc = (Y_truth[i]*((data_t)log(Y_pred[i]))) + 
-            (((data_t)1 - Y_truth[i])*((data_t)log((data_t)1-Y_pred[i])));
-        // data_t e = Y_pred[i] - Y_truth[i];
-        // data_t pc = 0.5 * e * e;
+        // calculate partial cost (pc) for binary cross entropy
+        // data_t pc = (Y_truth[i]*((data_t)log(Y_pred[i]))) + 
+        //     (((data_t)1 - Y_truth[i])*((data_t)log((data_t)1-Y_pred[i])));
+        // Mean Square Error loss
+        data_t e = Y_pred[i] - Y_truth[i];
+        data_t pc = 0.5 * e * e;
         atomicAdd(loss,pc/N);
     }
 }
@@ -32,9 +33,11 @@ __global__
 void dBinaryCrossEntropy(data_t *dY, data_t *Y_pred, data_t *Y_truth, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
-        dY[i] = (data_t)(-1)*(Y_truth[i]/Y_pred[i] - 
-                (((data_t)1-Y_truth[i])/((data_t)1-Y_pred[i])));
-        // dY[i] = Y_truth[i]-Y_pred[i];
+        // Binary Cross Entropy
+        // dY[i] = (data_t)(-1)*(Y_truth[i]/Y_pred[i] - 
+        //         (((data_t)1-Y_truth[i])/((data_t)1-Y_pred[i])));
+        // Mean Square Error loss
+        dY[i] = Y_truth[i]-Y_pred[i];
     }
 }
 

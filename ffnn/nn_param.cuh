@@ -6,7 +6,7 @@ typedef float data_t;
 
 /* Neural Net Parameters */
 #define NUM_LAYERS      1 + 1
-#define EPOCHS          100
+#define EPOCHS          20
 #define LEARNING_RATE   0.1
 
 /* Data Parameters */
@@ -20,5 +20,5 @@ typedef float data_t;
 #define NUM_FEATURES    IMAGE_H * IMAGE_W
 
 /* Kernel Call parameters */
-#define BLOCK_SIZE_W    32
+#define BLOCK_SIZE_W    16
 #define BLOCK_SIZE_b    1024

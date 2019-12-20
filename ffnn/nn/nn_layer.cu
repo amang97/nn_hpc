@@ -68,7 +68,6 @@ int nnl_free(nnlayer * nnl) {
 /******************************************************************************/
 /* Linear Layers */
 /******************************************************************************/
-
 /* Forward Pass */
 __global__
 void FFNNFP_global(data_t *Z, data_t *W, data_t *A, data_t *b, int Wx, int Wy,
@@ -102,8 +101,7 @@ Matrix * nnl_forward_pass_global(nnlayer * nnl, Matrix *A) {
                                         nnl->b->data_d,
                                         nnl->W->rows, nnl->W->cols,
                                         nnl->A->rows, nnl->A->cols);
-    // print_matrix_d(nnl->Z);
-    // printf("\n");
+
     return nnl->Z;
 }
 
