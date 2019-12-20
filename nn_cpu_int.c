@@ -3,7 +3,7 @@
  Project - Optimized Neural Network with Relu activation
 */
 
-// gcc -mavx -lm nn_cpu.c -lrt -o nn
+// gcc -mavx -lm nn_cpu_int.c -lrt -o nn_int
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +23,7 @@
 #define INPUTSIZE       784
 #define NUMHIDDENLAYERS 1
 #define NUMOUTPUTS      10
-#define BATCH_SIZE      1000
+#define BATCH_SIZE      60
 #define EPOCHS          1
 #define NUMINPUTSTRAIN  60000
 #define NUMINPUTSTEST   10000
@@ -82,12 +82,16 @@ int result_calculator(float * out_array, int length)
 {
   int max_value_output_node = 0;
   int i;
+  float * array_ptr;
+  array_ptr = out_array;
+  array_ptr++;
   for(i = 1; i < length; i++)
   {
-    if(out_array[max_value_output_node] < out_array[i])
+    if(out_array[max_value_output_node] < *(array_ptr))
     {
       max_value_output_node = i;
     }
+    array_ptr++;
   }
   return max_value_output_node;
 }
@@ -110,17 +114,35 @@ struct timespec diff(struct timespec start, struct timespec end)
 // Matrix Vector multiplication
 void mvmr(float* A, float * x, float * result, int num_row, int num_col, float * bias)
 {
-  int i,j;
+  int i,j,k;
+  int nLoop = num_col / 4;
+  __m128   m1,m2;
+  __m128   m0_5 = _mm_set_ps1(0.5f);
+  float storer[4];
+  __m128*  pDest = (__m128*) storer;
+  __m128*  pSrc1 = (__m128*) A;
+  float * result_ptr;
+  result_ptr = result;
   for(i = 0; i < num_row; i++)
   {
     float sum = 0;
-    for(j = 0; j < num_col; j++)
+
+    __m128*  pSrc2 = (__m128*)x;
+    __m128*  pSrc3 = (__m128*)bias;
+    for(j = 0; j < nLoop; j++)
     {
       //printf("%0.2f,",A[(i*num_col) + j]);
-      //sum = sum + (A[(i*num_col) + j] * x[j])  + bias[i];
-      sum = A[(i*num_col) + j];
+      m1 = _mm_mul_ps(*pSrc1,*pSrc2);
+      m2 = _mm_add_ps(m1,*pSrc3);
+      *pDest = _mm_add_ps(m2,m0_5);
+      pSrc1++;
+      pSrc2++;
+      pSrc3++;
+      sum = sum + storer[0] + storer[1] + storer[2] + storer[3];
     }
-    result[i] = relu(sum);
+    //printf("Here\n");
+    *result_ptr = relu(sum);
+    result_ptr++;
     //printf("\n%f,",sum);
     //result[i] = sum;
   }
@@ -180,12 +202,20 @@ void mvmt(float * A, float * b, float * result, int num_row, int num_col)
 void outer_p(float * a, float * b, float * result, int num_row, int num_col)
 {
   int i,j;
+  int nLoop = num_col / 4;
+  __m128   m1;
+  __m128   m0_5 = _mm_set_ps1(0.5f);
+  __m128*  pDest = (__m128*) result;
   for(i = 0; i < num_row; i++)
   {
-    for(j = 0; j < num_col; j++)
+    __m128   ma_i = _mm_set_ps1(a[i]);
+    __m128*  pSrc2 = (__m128*)b;
+    for(j = 0; j < nLoop; j++)
     {
-      // optimize the indexing
-      result[(i * num_col) + j] = a[i] * b[j];
+      m1 = _mm_mul_ps(ma_i,*pSrc2);
+      *pDest = _mm_add_ps(m1,m0_5);
+      pSrc2++;
+      pDest++;
     }
   }
 }
@@ -422,6 +452,7 @@ int main(int argc, char *argv[])
             mvmr(hiddenWeights[j], hiddenLayer_output[j-1], hiddenLayer_output[j],hidden_Layer_node_count[j],hidden_Layer_node_count[j-1],hiddenLayerBiases[j]);
           }
         }
+
         mvmr(outputWeights,hiddenLayer_output[NUMHIDDENLAYERS-1],outputLayer_output,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1], outputLayerBias);
 
         int guess_label = result_calculator(outputLayer_output, NUMOUTPUTS);
