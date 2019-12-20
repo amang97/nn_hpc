@@ -1,3 +1,5 @@
+/* Copyright 2019, Aman Gupta, ENG EC 527, Prof. Martin Herbordt              */
+/******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -8,6 +10,9 @@
 #include "cuda_utils.cuh"
 #include "../nn_param.cuh"
 
+/******************************************************************************/
+/* Neural Network layer initialization and deletion */
+/******************************************************************************/
 data_t rand_weight() {
     return ((data_t)rand())/((data_t)RAND_MAX);
 }
@@ -60,6 +65,11 @@ int nnl_free(nnlayer * nnl) {
     return 0;
 }
 
+/******************************************************************************/
+/* Linear Layers */
+/******************************************************************************/
+
+/* Forward Pass */
 __global__
 void FFNNFP_global(data_t *Z, data_t *W, data_t *A, data_t *b, int Wx, int Wy,
     int Ax, int Ay) {
@@ -92,62 +102,100 @@ Matrix * nnl_forward_pass_global(nnlayer * nnl, Matrix *A) {
                                         nnl->b->data_d,
                                         nnl->W->rows, nnl->W->cols,
                                         nnl->A->rows, nnl->A->cols);
+    // print_matrix_d(nnl->Z);
+    // printf("\n");
     return nnl->Z;
 }
 
-
-/* Activations */
-/******************************************************************************/
-__device__
-data_t relu(data_t x, data_t y) {
-    return (x > y) ? x : y;
-}
-
-__device__
-data_t sigmoid(data_t x) {
-    return ((data_t)1) / ((data_t)1 + (data_t)exp(-x));
-}
-
+/* Back Propagation */
 __global__
-void relu_forward_global(data_t *A, data_t *Z, int Zx, int Zy) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < Zx * Zy) {
-        A[index] = relu(Z[index],(data_t)0);
+void FFNNBP_global(data_t *dA, data_t *W, data_t *dZ, int Wx, int Wy,
+    int dZx, int dZy) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    // indexing in W transposed
+    int dAx = dZx;
+    int dAy = Wx;
+    data_t val = (data_t)0;
+
+    int k;
+    if (row < dAy && col < dAx) {
+      for (k = 0; k < Wy; k++) {
+          val += W[k*Wx+row] * dZ[k*dZx+col];
+      }
+      dA[row*dAx+col] = val;
     }
 }
 
 __global__
-void sigmoid_forward_global(data_t *A, data_t *Z, int Zx, int Zy) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < Zx * Zy) {
-        A[index] = sigmoid(Z[index]);
+void FFNNUW_global(data_t *W, data_t *dZ, data_t *A, int dZx, int dZy, int Ax,
+    int Ay, data_t lr) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    // indexing in A transposed
+    int Wx = Ay;
+    int Wy = dZy;
+    data_t val = (data_t)0;
+
+    int k;
+    if (row < Wy && col < Wx) {
+        for (k = 0; k < dZx; k++) {
+            val += dZ[row*dZx+k] * A[col*Ax+k];
+        }
+        W[row*Wx+col] += lr*(val/Ax);
     }
 }
 
-/* Host calls to GPU for RELU for forward pass*/
-void relu_forward_pass_global(Matrix * A, Matrix * Z) {
-    int  Zx = Z->rows, Zy = Z->cols;
-    // call relu activation forward pass
-    dim3 block(BLOCK_SIZE_b);
-    dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
-    relu_forward_global<<<num_blocks,block>>>(A->data_d,
-                                            Z->data_d,
-                                            Zx, Zy);
-    // return A;
+__global__
+void FFNNUb_global(data_t *b, data_t *dZ, int dZx, int dZy, int bx, data_t lr) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < dZx*dZy) {
+        int zx = i % dZx;
+        int zy = i / dZx;
+        // do an atomic add to avoid race conditions
+        // (because many threads might write to same memory location  )
+        atomicAdd(&b[zy], lr*(dZ[zy*dZx+zx]/dZx));
+    }
+
 }
 
-/* Host calls to GPU for Sigmoid for Forward pass */
-void sigmoid_forward_pass_global(Matrix * A, Matrix * Z) {
-    int Zx = Z->rows; int Zy = Z->cols;
+/* backward pass call from host */
+void nnl_back_propagation_global(nnlayer * nnl, Matrix *dZ, data_t lr) {
+    // to reduce number of memory references
+    int Ax = nnl->A->rows, Ay = nnl->A->cols;
+    int Wx = nnl->W->rows, Wy = nnl->W->cols;
+    int dZx = dZ->rows, dZy = dZ->cols;
 
-    // call sigmoid activation forward pass
-    dim3 block(BLOCK_SIZE_b);
-    dim3 num_blocks((Zy*Zx+block.x-1)/block.x);
-    sigmoid_forward_global<<<num_blocks,block>>>(A->data_d,
-                                                Z->data_d,
-                                                Zx, Zy);
-    // return A;
+    // call forward pass kernel
+    // Compute back-propagation error using dZ
+    dim3 block_W(BLOCK_SIZE_W, BLOCK_SIZE_W);
+    dim3 grid_W((Ax+block_W.x-1)/block_W.x, (Ay+block_W.y-1)/block_W.y);
+    FFNNBP_global<<<grid_W, block_W>>>(nnl->dA->data_d,
+                                        nnl->W->data_d,
+                                        dZ->data_d,
+                                        Wx, Wy,
+                                        dZx, dZy);
+    
+    // update bias
+    dim3 block_b(BLOCK_SIZE_b);
+    dim3 num_blocks_b((dZy*dZx+block_b.x-1)/block_b.x);
+    FFNNUb_global<<<num_blocks_b, block_b>>>(nnl->b->data_d,
+                                            dZ->data_d,
+                                            dZx, dZy,
+                                            nnl->b->rows,
+                                            lr);
+    
+    // update Weights
+    FFNNUW_global<<<grid_W, block_W>>>(nnl->W->data_d,
+                                        dZ->data_d,
+                                        nnl->A->data_d,
+                                        dZx, dZy,
+                                        Ax, Ay,
+                                        lr);
+
+    // return nnl->dA;
 }
+
 
 // /* Testing network and layer initializations */
 // printf("On host\n");

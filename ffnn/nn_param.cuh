@@ -5,15 +5,14 @@
 typedef float data_t;
 
 /* Neural Net Parameters */
-#define NUM_LAYERS      1 + 1 //+ 1
-#define EPOCHS          3
-#define LEARNING_RATE   0.01
-#define SEED            1527
+#define NUM_LAYERS      1 + 1
+#define EPOCHS          100
+#define LEARNING_RATE   0.1
 
 /* Data Parameters */
-#define BATCH_SIZE      3     // num of images fed to Feed Forward NN at once
-#define NUM_BATCHES_TR  3
-#define NUM_BATCHES_TT  150
+#define BATCH_SIZE      60     // num of images fed to Feed Forward NN at once
+#define NUM_BATCHES_TR  1000
+#define NUM_BATCHES_TT  15
 #define IMAGE_W         28    // Image width
 #define IMAGE_H         28    // Image height
 #define BUFFER_SIZE     5120
@@ -21,5 +20,5 @@ typedef float data_t;
 #define NUM_FEATURES    IMAGE_H * IMAGE_W
 
 /* Kernel Call parameters */
-#define BLOCK_SIZE_W    8
-#define BLOCK_SIZE_b    256
+#define BLOCK_SIZE_W    32
+#define BLOCK_SIZE_b    1024

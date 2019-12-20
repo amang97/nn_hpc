@@ -21,3 +21,5 @@ Matrix *get_batch_data_tt(data_tt *mnist_tt, int batch_id);
 
 Matrix *get_batch_label_tr(data_tr *mnist_tr, int batch_id);
 Matrix *get_batch_label_tt(data_tt *mnist_tt, int batch_id);
+
+int free_data(data_tr *tr, data_tt *tt);

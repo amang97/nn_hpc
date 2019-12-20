@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 /* Accessing matrix element from device data */
-#define ELEMENT(mat, row, col) mat->data_h[(col-1)*(mat->rows) + (row-1)]
+#define ELEMENT(mat, row, col) mat->data_h[(row-1)*(mat->cols) + (col-1)]
 
 /******************************************************************************/
 /* Data Structures */
