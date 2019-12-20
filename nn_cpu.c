@@ -10,6 +10,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Defination
@@ -18,19 +19,19 @@
 #define INPUTSIZE       784
 #define NUMHIDDENLAYERS 1
 #define NUMOUTPUTS      10
-#define BATCH_SIZE      4
-#define EPOCHS          100
-#define NUMINPUTSTRAIN  10000
+#define BATCH_SIZE      1000
+#define EPOCHS          200
+#define NUMINPUTSTRAIN  60000
 #define NUMINPUTSTEST   10000
 #define BUFFER_SIZE     5120
-#define LEARN_RATE      0.0001
+#define LEARN_RATE      0.00001
 //static const int numTrainingSets = 4;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Initializer for the weights and the biases for the Neural Network
 float init_weight()
 {
-  return ((float)rand())/((float)RAND_MAX);
+  return (((float)rand())/((float)RAND_MAX));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,7 +104,7 @@ struct timespec diff(struct timespec start, struct timespec end)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Matrix Vector multiplication
-void mvmr(float* A, float * x, float * result, int num_row, int num_col, float bias)
+void mvmr(float* A, float * x, float * result, int num_row, int num_col, float * bias)
 {
   int i,j;
   for(i = 0; i < num_row; i++)
@@ -112,9 +113,9 @@ void mvmr(float* A, float * x, float * result, int num_row, int num_col, float b
     for(j = 0; j < num_col; j++)
     {
       //printf("%0.2f,",A[(i*num_col) + j]);
-      sum = sum + (A[(i*num_col) + j] * x[j]);
+      sum = sum + (A[(i*num_col) + j] * x[j])  + bias[i];
     }
-    result[i] = relu(sum + bias);
+    result[i] = relu(sum);
     //printf("\n%f,",sum);
     //result[i] = sum;
   }
@@ -126,7 +127,7 @@ void mvmr(float* A, float * x, float * result, int num_row, int num_col, float b
   //printf("\n");
 }
 
-void mvms(float* A, float * x, float * result, int num_row, int num_col, float bias)
+void mvms(float* A, float * x, float * result, int num_row, int num_col, float * bias)
 {
   int i,j;
   for(i = 0; i < num_row; i++)
@@ -134,9 +135,9 @@ void mvms(float* A, float * x, float * result, int num_row, int num_col, float b
     float sum = 0;
     for(j = 0; j < num_col; j++)
     {
-      sum = sum + (A[(i*num_col) + j] * x[j]);
+      sum = sum + (A[(i*num_col) + j] * x[j]) + bias[i];
     }
-    result[i] = Sigmoid(sum + bias);
+    result[i] = Sigmoid(sum);
   }
 }
 
@@ -151,6 +152,22 @@ void mvm(float* A, float * x, float * result, int num_row, int num_col)
       sum = sum + (A[(i*num_col) + j] * x[j]);
     }
     result[i] = sum;
+  }
+}
+
+// Transpose Matrix Vector Multiplication
+// b * Transpose(A) = c
+void mvmt(float * A, float * b, float * result, int num_row, int num_col)
+{
+  int i,j;
+  for(j = 0; j < num_col; j++)
+  {
+    float sum = 0;
+    for(i = 0; i < num_row; i++)
+    {
+      sum = sum + (A[(i*num_col) + j] * b[i]);
+    }
+    result[j] = sum;
   }
 }
 
@@ -176,7 +193,7 @@ void add_weights_l(float * a, float * b, int arr_len)
   int i;
   for(i = 0; i < arr_len; i++)
   {
-    a[i] -= (b[i] * LEARN_RATE);
+    a[i] += (b[i] * LEARN_RATE / 1000);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,9 +211,11 @@ int main(int argc, char *argv[])
   }
   else
   {
-    int i,j,iteration;
+    int i,j,k,iteration;
+    bool store_max = true;
+    float what_is_max = 0.0;
 
-    srand(time(0));
+    srand(1527);
 
     int hidden_Layer_node_count[NUMHIDDENLAYERS];
     float training_inputs[NUMINPUTSTRAIN][INPUTSIZE];
@@ -204,10 +223,10 @@ int main(int argc, char *argv[])
     float testing_inputs[NUMINPUTSTEST][INPUTSIZE];
     int testing_labels[NUMINPUTSTEST];
     float * hiddenLayer_output[NUMHIDDENLAYERS];
-    float hiddenLayerBiases[NUMHIDDENLAYERS];
+    float * hiddenLayerBiases[NUMHIDDENLAYERS];
     float * hiddenLayer_gradient[NUMHIDDENLAYERS];
     float outputLayer_output[NUMOUTPUTS];
-    float outputLayerBias;
+    float outputLayerBias[NUMOUTPUTS];
     float outputLayer_gradient[NUMOUTPUTS];
     // For weights, the row number is the output node number
     // The column number if the input node number
@@ -229,11 +248,11 @@ int main(int argc, char *argv[])
     //Initialize hidden weigts ////////////////////////////////////////////////
     for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
-      int j;
       if(i == 0)
       {
         hiddenWeights[0] = (float*)calloc(hidden_Layer_node_count[0]*INPUTSIZE, sizeof(float));
-        if(hiddenWeights[0] == NULL)
+        hiddenWeights_gradient[0] = (float*)calloc(hidden_Layer_node_count[0]*INPUTSIZE, sizeof(float));
+        if((hiddenWeights[0] == NULL) || (hiddenWeights_gradient[0] == NULL))
         {
           printf("Memory not allocated\n");
           return 0;
@@ -246,7 +265,8 @@ int main(int argc, char *argv[])
       else
       {
         hiddenWeights[i] = (float*)calloc(hidden_Layer_node_count[i]*hidden_Layer_node_count[i-1],sizeof(float));
-        if(hiddenWeights[i] == NULL)
+        hiddenWeights_gradient[i] = (float*)calloc(hidden_Layer_node_count[i]*hidden_Layer_node_count[i-1],sizeof(float));
+        if((hiddenWeights[i] == NULL) || (hiddenWeights_gradient[i] == NULL))
         {
           printf("Memory not allocated\n");
           return 0;
@@ -256,6 +276,7 @@ int main(int argc, char *argv[])
           hiddenWeights[i][j] = init_weight();
         }
       }
+      hiddenLayerBiases[i] = (float*)calloc(hidden_Layer_node_count[i],sizeof(float));
     }
 
     // Initialize output weights////////////////////////////////////////////////
@@ -277,10 +298,16 @@ int main(int argc, char *argv[])
     // For Hidden Layers
     for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
-      hiddenLayerBiases[i] = init_weight();
+      for(j = 0; j < hidden_Layer_node_count[i]; j++)
+      {
+        hiddenLayerBiases[i][j] = init_weight();
+      }
     }
     // For Output Layer
-    outputLayerBias = init_weight();
+    for(i = 0; i < NUMOUTPUTS; i++)
+    {
+      outputLayerBias[i] = init_weight();
+    }
     printf("Initialized Bias for Hidden and Output Layer\n");
 
     // Allocate memory to Hidden Layer Output /////////////////////////////////
@@ -357,11 +384,6 @@ int main(int argc, char *argv[])
     }
 
     printf("Loaded Training and Testing Inputs\n");
-    /*for(i = 0; i < INPUTSIZE; i++)
-    {
-      printf("%0.2f,",training_inputs[0][i]);
-    }
-    printf("\n");*/
 
     // Training Algorithm /////////////////////////////////////////////////////
 
@@ -395,42 +417,98 @@ int main(int argc, char *argv[])
 
         // Back Propagation Algorithm /////////////////////////////////////////
         // Calculates Deltas at Output Layer using one-hot representation
+        // Treat the output like a Softmax
+        // So calculate the sum, which should the output of label node
+        if(store_max)
+        {
+          float sum = 0;
+          for(j = 0; j < NUMOUTPUTS; j++)
+          {
+            sum = sum + outputLayer_output[j];
+          }
+          what_is_max = sum / NUMOUTPUTS;
+          store_max = false;
+        }
+        // Calculate output gradient
         for(j = 0; j < NUMOUTPUTS; j++)
         {
           if((j + 1) == training_labels[i])
           {
-            //outputLayer_gradient[j] = (10000 - outputLayer_output[j]) * dSigmoid(outputLayer_output[j]);
-            outputLayer_gradient[j] = 0;
+            outputLayer_gradient[j] += (what_is_max - outputLayer_output[j]) * drelu(outputLayer_output[j]);
           }
           else
           {
-            outputLayer_gradient[j] = (outputLayer_output[j]) * drelu(outputLayer_output[j]);
+            outputLayer_gradient[j] += (0 - outputLayer_output[j]) * drelu(outputLayer_output[j]);
           }
         }
-
-        // Update Output Bias
-        float sum = 0;
-        for(j = 0; j < NUMOUTPUTS; j++)
+        if(((i+1) % BATCH_SIZE) == 0)
         {
-          sum = sum + outputLayer_gradient[j];
+          // Normalize Gradients
+          for(j = 0; j < NUMOUTPUTS; j++)
+          {
+            outputLayer_gradient[j] = outputLayer_gradient[j] / BATCH_SIZE;
+          }
+          // Calculate the gradient for next layer with current weights
+          mvmt(outputWeights, outputWeights_gradient, hiddenLayer_gradient[NUMHIDDENLAYERS-1], NUMOUTPUTS, hidden_Layer_node_count[NUMHIDDENLAYERS-1]);
+
+          // Update Output Bias
+          for(j = 0; j < NUMOUTPUTS; j++)
+          {
+            outputLayerBias[j] += LEARN_RATE * outputLayer_gradient[j] / 1000;
+          }
+
+          // Update Output Weight
+          outer_p(outputLayer_gradient,hiddenLayer_output[NUMHIDDENLAYERS-1],outputWeights_gradient,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1]);
+          add_weights_l(outputWeights,outputWeights_gradient,NUMOUTPUTS * hidden_Layer_node_count[NUMHIDDENLAYERS-1]);
+
+          // Calculates Deltas at Hidden Layer
+          for(j = (NUMHIDDENLAYERS-1); j >= 0; j--)
+          {
+            for(k = 0 ; k < hidden_Layer_node_count[NUMHIDDENLAYERS-1]; k++)
+            {
+              hiddenLayer_gradient[j][k] = hiddenLayer_gradient[j][k] * drelu(hiddenLayer_output[j][k]);
+            }
+
+            if(j != 0)
+            {
+              mvmt(hiddenWeights[j], hiddenLayer_gradient[j], hiddenLayer_gradient[j-1],hidden_Layer_node_count[j],hidden_Layer_node_count[j-1]);
+            }
+
+            // Update Hidden Layer Bias
+            for(k = 0; k < hidden_Layer_node_count[j]; k++)
+            {
+              hiddenLayerBiases[j][k] += LEARN_RATE * hiddenLayer_gradient[j][k] / 1000;
+            }
+
+            // Update Hidden Layer Weights
+            outer_p(hiddenLayer_gradient[j],hiddenLayer_output[j-1],hiddenWeights_gradient[j],hidden_Layer_node_count[j],hidden_Layer_node_count[j-1]);
+            add_weights_l(hiddenWeights[j],hiddenWeights_gradient[j],hidden_Layer_node_count[j] * hidden_Layer_node_count[j-1]);
+          }
+          //RE-Initialize to Zero
+          for(j = 0; j < NUMOUTPUTS; j++)
+          {
+            outputLayer_gradient[j] = 0;
+          }
         }
-        sum = sum / ((float)(NUMOUTPUTS));
-        outputLayerBias = outputLayerBias - (sum * LEARN_RATE);
-
-        // Update Output Weight
-        outer_p(outputLayer_gradient,hiddenLayer_output[NUMHIDDENLAYERS-1],outputWeights_gradient,NUMOUTPUTS,hidden_Layer_node_count[NUMHIDDENLAYERS-1]);
-        add_weights_l(outputWeights,outputWeights_gradient,NUMOUTPUTS * hidden_Layer_node_count[NUMHIDDENLAYERS-1]);
-
       }
-      //printf("\n\n\n");
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
       time_stamp = diff(time1,time2);
       printf("Feed Forwarded for Epoch %d\n",iteration);
       printf("Time Taken: %0.2f seconds\nAccuracy: %0.3f\n",(((float)(GIG * time_stamp.tv_sec + time_stamp.tv_nsec)) / GIG), (((float)correct_answers) * 100 / NUMINPUTSTRAIN));
-      printf("Bias: %f\n\n", outputLayerBias);
+      printf("Bias: ");
+      for(i = 0; i < NUMOUTPUTS; i++)
+      {
+        printf("%0.1f,",outputLayerBias[i]);
+      }
+      printf("\n\nOutput: ");
+      for(i = 0; i < NUMOUTPUTS; i++)
+      {
+        printf("%0.1f,",outputLayer_output[i]);
+      }
+      printf("\n\n");
       //for(i = 0; i < (NUMOUTPUTS * hidden_Layer_node_count[NUMHIDDENLAYERS-1]); i++)
       //{
-      //  printf("%f,",outputWeights[i]);
+      //  printf("%0.1f,",outputWeights[i]);
       //}
       //printf("\n\n");
     }
@@ -440,11 +518,14 @@ int main(int argc, char *argv[])
     for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
       free(hiddenWeights[i]);
+      free(hiddenLayer_gradient[i]);
+      free(hiddenWeights_gradient[i]);
     }
     free(outputWeights);
     free(outputWeights_gradient);
 
     printf("Freed Weights\n");
+    printf("Freed Gradients\n");
     // Free Neural Network Nodes //////////////////////////////////////////////
     for(i = 0; i < NUMHIDDENLAYERS; i++)
     {
